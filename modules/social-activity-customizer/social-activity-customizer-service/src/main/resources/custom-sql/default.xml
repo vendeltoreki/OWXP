@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<custom-sql>
+	<sql id="com.liferay.social.activity.customizer.service.persistence.CustomSocialActivitySetFinder.findByU_C">
+<![CDATA[
+	SELECT SocialActivitySet.*
+	FROM SocialActivitySet
+	WHERE SocialActivitySet.activitySetId IN (
+		SELECT T1.lastModifiedId FROM (
+			SELECT SocialActivitySet.activitySetId as lastModifiedId , MAX(SocialActivitySet.modifiedDate)
+			FROM SocialActivitySet
+			WHERE
+				SocialActivitySet.userId = ? AND
+				SocialActivitySet.classNameId = ?
+			GROUP BY SocialActivitySet.classPK) as T1)
+	ORDER BY SocialActivitySet.modifiedDate DESC
+]]>
+	</sql>
+</custom-sql>
