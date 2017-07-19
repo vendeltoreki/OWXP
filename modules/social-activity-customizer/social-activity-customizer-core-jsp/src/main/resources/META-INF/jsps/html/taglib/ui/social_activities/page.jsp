@@ -40,8 +40,49 @@
 
 	Date now = new Date();
 
+	Group scopeGroup = serviceContext.getScopeGroup();
+
+	if (scopeGroup.isUser()) {
+		selector = "CUSTOM";
+	}
+
 	int daysBetween = -1;
 
+	ArrayList<FeedEntryHolder> feedEntries = new ArrayList<>();
+	%>
+
+	<c:if test="<%= scopeGroup.isUser() %>">
+
+		<%
+		for (SocialActivityDescriptor activityDescriptor : activityDescriptors) {
+			SocialActivityFeedEntry activityFeedEntry = activityDescriptor.interpret(selector, serviceContext);
+
+			if (activityFeedEntry == null) {
+				continue;
+			}
+
+			FeedEntryHolder entryHolder = new FeedEntryHolder(activityFeedEntry.getTitle() + "<br />" + activityFeedEntry.getBody());
+
+			feedEntries.add(entryHolder);
+		}
+
+		String headerName = "x's-activities";
+		%>
+
+		<liferay-ui:search-container delta="10" emptyResultsMessage="there-are-no-recent-activities" total="<%= feedEntries.size() %>">
+			<liferay-ui:search-container-results results="<%= ListUtil.subList(feedEntries, searchContainer.getStart(), searchContainer.getEnd()) %>" />
+
+			<liferay-ui:search-container-row className="FeedEntryHolder" keyProperty="feedEntryText" modelVar="enrty">
+				<liferay-ui:search-container-column-text name="<%= LanguageUtil.format(request, headerName, UserLocalServiceUtil.getUserById(scopeGroup.getClassPK()).getFirstName()) %>" property="feedEntryText" />
+			</liferay-ui:search-container-row>
+
+			<liferay-ui:search-iterator paginate="true" />
+		</liferay-ui:search-container>
+	</c:if>
+
+	<c:if test="<%= !scopeGroup.isUser() %>">
+
+	<%
 	for (SocialActivityDescriptor activityDescriptor : activityDescriptors) {
 		SocialActivityFeedEntry activityFeedEntry = activityDescriptor.interpret(selector, serviceContext);
 
@@ -117,4 +158,20 @@
 			<liferay-ui:message key="there-are-no-recent-activities" />
 		</c:otherwise>
 	</c:choose>
+	</c:if>
 </div>
+
+<%!
+private class FeedEntryHolder {
+	public FeedEntryHolder(String feedEntryText) {
+		this.feedEntryText = feedEntryText;
+	}
+
+	public String getFeedEntryText() {
+		return feedEntryText;
+	}
+
+	private String feedEntryText;
+
+}
+%>
