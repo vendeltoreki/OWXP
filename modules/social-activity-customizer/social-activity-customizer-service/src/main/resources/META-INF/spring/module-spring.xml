@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" default-destroy-method="destroy" default-init-method="afterPropertiesSet" xsi:schemaLocation=" http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+	<bean class="com.liferay.social.activity.customizer.service.impl.CustomSocialActivitySetLocalServiceImpl" id="com.liferay.social.activity.customizer.service.CustomSocialActivitySetLocalService" />
+	<bean class="com.liferay.social.activity.customizer.service.persistence.impl.CustomSocialActivitySetPersistenceImpl" id="com.liferay.social.activity.customizer.service.persistence.CustomSocialActivitySetPersistence" parent="basePersistence" />
+	<bean class="com.liferay.social.activity.customizer.service.persistence.impl.CustomSocialActivitySetFinderImpl" id="com.liferay.social.activity.customizer.service.persistence.CustomSocialActivitySetFinder" parent="basePersistence" />
+</beans>
