@@ -1,6 +1,9 @@
 dependencies {
+	compile group: "com.liferay", name: "com.liferay.wiki.api", version: "2.2.0"
+
 	compileOnly group: "com.liferay.portal", name: "com.liferay.portal.kernel", version: "2.0.0"
 	compileOnly group: "org.osgi", name: "osgi.cmpn", version: "6.0.0"
+	compileOnly project(':modules:social-activity-customizer:social-activity-customizer-api')
 }
 
 group = "com.liferay.social.activity.customizer"
