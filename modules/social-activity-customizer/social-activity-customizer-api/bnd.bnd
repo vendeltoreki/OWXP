@@ -1,0 +1,9 @@
+Bundle-Name: social-activity-customizer-api
+Bundle-SymbolicName: com.liferay.social.activity.customizer.api
+Bundle-Version: 1.0.0
+Export-Package:\
+	com.liferay.social.activity.customizer.exception,\
+	com.liferay.social.activity.customizer.model,\
+	com.liferay.social.activity.customizer.service,\
+	com.liferay.social.activity.customizer.service.persistence
+-includeresource: META-INF/service.xml=../social-activity-customizer-service/service.xml
