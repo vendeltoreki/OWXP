@@ -4,10 +4,5 @@
 <service-builder package-path="com.liferay.social.activity.customizer">
 	<namespace>sac</namespace>
 	<!--<entity data-source="sampleDataSource" local-service="true" name="Foo" remote-service="false" session-factory="sampleSessionFactory" table="foo" tx-manager="sampleTransactionManager uuid="true"">-->
-	<entity local-service="true" name="CustomSocialActivitySet" remote-service="false" >
-
-		<!-- PK fields -->
-
-		<column name="id" primary="true" type="long" />
-	</entity>
+	<entity local-service="true" name="CustomSocialActivitySet" remote-service="false" />
 </service-builder>
