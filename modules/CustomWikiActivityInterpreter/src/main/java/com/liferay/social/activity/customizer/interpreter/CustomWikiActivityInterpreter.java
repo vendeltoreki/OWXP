@@ -58,6 +58,11 @@ public class CustomWikiActivityInterpreter extends BaseSocialActivityInterpreter
 	public String[] getClassNames() {
 		return _CLASS_NAMES;
 	}
+	
+	@Override
+	public String getSelector(){
+		return _SELECTOR;
+	}
 
 	protected String getAttachmentTitle(
 			SocialActivity activity, WikiPageResource pageResource,
@@ -301,6 +306,8 @@ public class CustomWikiActivityInterpreter extends BaseSocialActivityInterpreter
 
 		_wikiPageResourceLocalService = wikiPageResourceLocalService;
 	}
+	
+	private static final String _SELECTOR = "GENERAL";
 
 	private static final String[] _CLASS_NAMES = {WikiPage.class.getName()};
 
