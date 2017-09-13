@@ -146,10 +146,13 @@ public class CustomWikiActivityInterpreter extends BaseSocialActivityInterpreter
 		String creatorUserName = getUserName(
 			activity.getUserId(), serviceContext);
 
-		title = wrapLink(link, title);
+		String pageTitle = pageResource.getTitle();
+		
+		pageTitle = wrapLink(link, pageTitle);
+		title = wrapLink( link, title );
 
 		return new Object[] {
-			groupName, creatorUserName, title,
+			groupName, creatorUserName , pageTitle , title ,
 			getAttachmentTitle(activity, pageResource, serviceContext)
 		};
 	}
