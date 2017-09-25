@@ -10,11 +10,15 @@ import com.liferay.portal.kernel.exception.NoSuchModelException;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.portletfilerepository.PortletFileRepositoryUtil;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
+import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
+import com.liferay.portal.kernel.service.LayoutLocalServiceUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalServiceUtil;
 import com.liferay.portal.kernel.util.AggregateResourceBundleLoader;
@@ -45,6 +49,10 @@ import java.text.DateFormat;
 import java.util.Date;
 import java.util.List;
 
+import javax.portlet.PortletRequest;
+import javax.portlet.PortletURL;
+import javax.portlet.WindowState;
+
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
@@ -70,6 +78,44 @@ public class CustomWikiActivityInterpreter
 	@Override
 	public String getSelector() {
 		return _SELECTOR;
+	}
+
+	@Override
+	protected String addNoSuchEntryRedirect(
+			String url, String className, long classPK,
+			ServiceContext serviceContext)
+		throws Exception {
+
+		LiferayPortletResponse liferayPortletResponse =
+			serviceContext.getLiferayPortletResponse();
+
+		if (liferayPortletResponse == null) {
+			return null;
+		}
+
+		Group group = GroupLocalServiceUtil.fetchFriendlyURLGroup(
+			serviceContext.getCompanyId(), "/guest");
+
+		long plid = LayoutLocalServiceUtil.getDefaultPlid(
+			group.getGroupId(), true);
+
+		WikiPage page = _wikiPageLocalService.getPage(classPK);
+
+		PortletURL portletURL = liferayPortletResponse.createLiferayPortletURL(
+			plid, WikiPortletKeys.WIKI, PortletRequest.RENDER_PHASE);
+
+		portletURL.setParameter("mvcRenderCommandName", "/wiki/view");
+		portletURL.setParameter("nodeId", String.valueOf(page.getNodeId()));
+		portletURL.setParameter("title", page.getTitle());
+		portletURL.setWindowState(WindowState.MAXIMIZED);
+
+		String viewEntryURL = portletURL.toString();
+
+		if (Validator.isNotNull(viewEntryURL)) {
+			return viewEntryURL;
+		}
+
+		return HttpUtil.setParameter(url, "noSuchEntryRedirect", viewEntryURL);
 	}
 
 	protected String getAttachmentTitle(
