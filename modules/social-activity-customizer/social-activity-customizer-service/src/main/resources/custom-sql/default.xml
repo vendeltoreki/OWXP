@@ -4,15 +4,17 @@
 <![CDATA[
 	SELECT SocialActivitySet.*
 	FROM SocialActivitySet
-	WHERE SocialActivitySet.activitySetId IN (
-		SELECT T1.lastModifiedId FROM (
-			SELECT SocialActivitySet.activitySetId as lastModifiedId , MAX(SocialActivitySet.modifiedDate)
-			FROM SocialActivitySet
-			WHERE
-				SocialActivitySet.userId = ? AND
-				SocialActivitySet.classNameId = ?
-			GROUP BY SocialActivitySet.classPK) as T1)
-	ORDER BY SocialActivitySet.modifiedDate DESC
+	INNER JOIN
+	(
+		SELECT SocialActivitySet.classPK, MAX(SocialActivitySet.modifiedDate) AS maxModifiedDate
+		FROM SocialActivitySet
+		WHERE
+			SocialActivitySet.userId = ? AND
+			SocialActivitySet.classNameId = ?
+		GROUP BY SocialActivitySet.classPK
+	) AS T1
+	ON (SocialActivitySet.classPK = T1.classPK and SocialActivitySet.modifiedDate = T1.maxModifiedDate)
+	ORDER BY modifiedDate DESC
 ]]>
 	</sql>
 </custom-sql>
