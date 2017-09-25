@@ -45,6 +45,9 @@
 	if (scopeGroup.isUser()) {
 		selector = "CUSTOM";
 	}
+	else {
+		selector = "GENERAL";
+	}
 
 	int daysBetween = -1;
 
