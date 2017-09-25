@@ -201,7 +201,7 @@ public class CustomWikiActivityInterpreter
 		Object[] titleArguments = getTitleArguments(
 			null, activity, link, entryTitle, serviceContext);
 
-		String titlePattern = "{0}";
+		String titlePattern = "{0}\t{1}";
 
 		return serviceContext.translate(titlePattern, titleArguments);
 	}
@@ -220,9 +220,12 @@ public class CustomWikiActivityInterpreter
 			return null;
 		}
 
+		String activityText =
+			"<font color=\"black\">" + _getActivityText(activity) + "</font>";
+
 		title = wrapLink(link, title);
 
-		return new Object[] {title};
+		return new Object[] {activityText, title};
 	}
 
 	@Override
@@ -368,6 +371,34 @@ public class CustomWikiActivityInterpreter
 		WikiPageResourceLocalService wikiPageResourceLocalService) {
 
 		_wikiPageResourceLocalService = wikiPageResourceLocalService;
+	}
+
+	private String _getActivityText(SocialActivity activity) {
+		int activityType = activity.getType();
+
+		String activityText = null;
+
+		if ((activityType == WikiActivityKeys.ADD_COMMENT) ||
+			(activityType == SocialActivityConstants.TYPE_ADD_COMMENT)) {
+
+			activityText = "Commented";
+		}
+		else if (activityType == WikiActivityKeys.ADD_PAGE) {
+			activityText = "Created";
+		}
+		else if (activityType == SocialActivityConstants.TYPE_MOVE_TO_TRASH) {
+			activityText = "Removed";
+		}
+		else if (activityType ==
+					SocialActivityConstants.TYPE_RESTORE_FROM_TRASH) {
+
+			activityText = "Restored";
+		}
+		else {
+			activityText = "Updated";
+		}
+
+		return activityText;
 	}
 
 	private String _getFormattedBody(
