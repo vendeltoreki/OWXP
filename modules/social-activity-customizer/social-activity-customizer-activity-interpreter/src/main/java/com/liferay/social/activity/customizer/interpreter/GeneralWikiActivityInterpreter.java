@@ -52,7 +52,7 @@ import org.osgi.service.component.annotations.Reference;
 	property = {"javax.portlet.name=" + WikiPortletKeys.WIKI},
 	service = SocialActivityInterpreter.class
 )
-public class CustomWikiActivityInterpreter extends BaseSocialActivityInterpreter {
+public class GeneralWikiActivityInterpreter extends BaseSocialActivityInterpreter {
 
 	@Override
 	public String[] getClassNames() {
@@ -312,7 +312,7 @@ public class CustomWikiActivityInterpreter extends BaseSocialActivityInterpreter
 	private static final String[] _CLASS_NAMES = {WikiPage.class.getName()};
 
 	private static final Log _log = LogFactoryUtil.getLog(
-		CustomWikiActivityInterpreter.class);
+		GeneralWikiActivityInterpreter.class);
 
 	private ResourceBundleLoader _resourceBundleLoader;
 	private WikiPageLocalService _wikiPageLocalService;
