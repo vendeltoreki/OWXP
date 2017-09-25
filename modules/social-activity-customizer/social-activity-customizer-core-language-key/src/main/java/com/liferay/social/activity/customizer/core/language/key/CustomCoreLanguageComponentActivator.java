@@ -1,4 +1,4 @@
-package com.liferay.hook.language;
+package com.liferay.social.activity.customizer.core.language.key;
 
 import java.util.Enumeration;
 import java.util.ResourceBundle;
