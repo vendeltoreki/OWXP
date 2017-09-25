@@ -469,18 +469,6 @@ public class CustomWikiActivityInterpreter
 			tagRow = tagRow.concat(wrapLink(url, tag.getName()));
 		}
 
-		String[] parts = new String[] {
-			dateString, String.valueOf(viewCount), summary, tagRow
-		};
-
-		int count = 0;
-
-		for (String part : parts) {
-			if (Validator.isNotNull(part)) {
-				count++;
-			}
-		}
-
 		StringBundler sb = new StringBundler(15);
 
 		sb.append("<h5 class=\"text-default\">");
