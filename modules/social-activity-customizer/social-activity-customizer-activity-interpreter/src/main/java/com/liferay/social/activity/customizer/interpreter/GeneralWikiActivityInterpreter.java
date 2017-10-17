@@ -52,15 +52,16 @@ import org.osgi.service.component.annotations.Reference;
 	property = {"javax.portlet.name=" + WikiPortletKeys.WIKI},
 	service = SocialActivityInterpreter.class
 )
-public class GeneralWikiActivityInterpreter extends BaseSocialActivityInterpreter {
+public class GeneralWikiActivityInterpreter
+	extends BaseSocialActivityInterpreter {
 
 	@Override
 	public String[] getClassNames() {
 		return _CLASS_NAMES;
 	}
-	
+
 	@Override
-	public String getSelector(){
+	public String getSelector() {
 		return _SELECTOR;
 	}
 
@@ -152,12 +153,13 @@ public class GeneralWikiActivityInterpreter extends BaseSocialActivityInterprete
 			activity.getUserId(), serviceContext);
 
 		String pageTitle = pageResource.getTitle();
-		
+
 		pageTitle = wrapLink(link, pageTitle);
-		title = wrapLink( link, title );
+
+		title = wrapLink(link, title);
 
 		return new Object[] {
-			groupName, creatorUserName , pageTitle , title ,
+			groupName, creatorUserName, pageTitle, title,
 			getAttachmentTitle(activity, pageResource, serviceContext)
 		};
 	}
@@ -306,10 +308,10 @@ public class GeneralWikiActivityInterpreter extends BaseSocialActivityInterprete
 
 		_wikiPageResourceLocalService = wikiPageResourceLocalService;
 	}
-	
-	private static final String _SELECTOR = "GENERAL";
 
 	private static final String[] _CLASS_NAMES = {WikiPage.class.getName()};
+
+	private static final String _SELECTOR = "GENERAL";
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		GeneralWikiActivityInterpreter.class);

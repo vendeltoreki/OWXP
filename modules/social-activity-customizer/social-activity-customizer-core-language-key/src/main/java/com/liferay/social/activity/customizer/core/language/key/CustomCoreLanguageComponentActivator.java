@@ -7,28 +7,27 @@ import org.osgi.service.component.annotations.Component;
 
 import com.liferay.portal.kernel.language.UTF8Control;
 
-
 /**
  * @author Ugurcan Cetin
  */
 
 @Component(
-	    property = { "language.id=en_US" }, 
-	    service = ResourceBundle.class
+		property = { "language.id=en_US" }, 
+		service = ResourceBundle.class
 	)
 public class CustomCoreLanguageComponentActivator extends ResourceBundle {
 
 	@Override
-    protected Object handleGetObject(String key) {
-        return _resourceBundle.getObject(key);
-    }
+	protected Object handleGetObject(String key) {
+		return _resourceBundle.getObject(key);
+	}
 
-    @Override
-    public Enumeration<String> getKeys() {
-        return _resourceBundle.getKeys();
-    }
+	@Override
+	public Enumeration<String> getKeys() {
+		return _resourceBundle.getKeys();
+	}
 
-    private final ResourceBundle _resourceBundle = ResourceBundle.getBundle(
-        "content.Language", UTF8Control.INSTANCE);
-	
+	private final ResourceBundle _resourceBundle = ResourceBundle.getBundle(
+		"content.Language", UTF8Control.INSTANCE);
+
 }
