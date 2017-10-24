@@ -159,8 +159,9 @@ public class GeneralWikiActivityInterpreter
 		title = wrapLink(link, title);
 
 		return new Object[] {
-			groupName, creatorUserName, pageTitle, title,
-			getAttachmentTitle(activity, pageResource, serviceContext)
+			groupName, creatorUserName, title,
+			getAttachmentTitle(activity, pageResource, serviceContext),
+			pageTitle
 		};
 	}
 
