@@ -87,7 +87,7 @@ public class RecommendEntityLocalServiceImpl
 		return jsonObject;
 	}
 
-	public JSONObject getTopMostViewedRanomized(int resultCount, int sampleCount, ServiceContext serviceContext) {
+	public JSONObject getTopMostViewedRandomized(int resultCount, int sampleCount, ServiceContext serviceContext) {
 		_log.info("getTopMostViewedRanomized("+resultCount+", "+sampleCount+") called.");
 		
 		List<AssetEntry> assetEntries = getMostViewedWikiPageAssetsRandomized(resultCount, sampleCount);

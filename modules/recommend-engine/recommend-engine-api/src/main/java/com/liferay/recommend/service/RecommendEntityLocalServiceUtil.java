@@ -250,11 +250,11 @@ public class RecommendEntityLocalServiceUtil {
 		return getService().getTopMostViewed(resultCount, serviceContext);
 	}
 
-	public static com.liferay.portal.kernel.json.JSONObject getTopMostViewedRanomized(
+	public static com.liferay.portal.kernel.json.JSONObject getTopMostViewedRandomized(
 		int resultCount, int sampleCount,
 		com.liferay.portal.kernel.service.ServiceContext serviceContext) {
 		return getService()
-				   .getTopMostViewedRanomized(resultCount, sampleCount,
+				   .getTopMostViewedRandomized(resultCount, sampleCount,
 			serviceContext);
 	}
 

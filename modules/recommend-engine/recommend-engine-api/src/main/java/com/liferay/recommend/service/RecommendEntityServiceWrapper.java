@@ -58,10 +58,10 @@ public class RecommendEntityServiceWrapper implements RecommendEntityService,
 	}
 
 	@Override
-	public com.liferay.portal.kernel.json.JSONObject getTopMostViewedRanomized(
+	public com.liferay.portal.kernel.json.JSONObject getTopMostViewedRandomized(
 		int resultCount, int sampleCount,
 		com.liferay.portal.kernel.service.ServiceContext serviceContext) {
-		return _recommendEntityService.getTopMostViewedRanomized(resultCount,
+		return _recommendEntityService.getTopMostViewedRandomized(resultCount,
 			sampleCount, serviceContext);
 	}
 

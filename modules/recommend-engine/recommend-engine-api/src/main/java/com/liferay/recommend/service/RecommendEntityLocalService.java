@@ -229,7 +229,7 @@ public interface RecommendEntityLocalService extends BaseLocalService,
 		ServiceContext serviceContext);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public JSONObject getTopMostViewedRanomized(int resultCount,
+	public JSONObject getTopMostViewedRandomized(int resultCount,
 		int sampleCount, ServiceContext serviceContext);
 
 	/**

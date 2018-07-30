@@ -55,8 +55,8 @@ public class RecommendEntityServiceImpl extends RecommendEntityServiceBaseImpl {
 	}
 
 	@JSONWebService
-	public JSONObject getTopMostViewedRanomized(int resultCount, int sampleCount, ServiceContext serviceContext) {
-		return recommendEntityLocalService.getTopMostViewedRanomized(resultCount, sampleCount, serviceContext);
+	public JSONObject getTopMostViewedRandomized(int resultCount, int sampleCount, ServiceContext serviceContext) {
+		return recommendEntityLocalService.getTopMostViewedRandomized(resultCount, sampleCount, serviceContext);
 	}
 	
 }

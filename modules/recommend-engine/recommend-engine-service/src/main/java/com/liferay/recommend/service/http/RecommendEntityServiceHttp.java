@@ -111,13 +111,13 @@ public class RecommendEntityServiceHttp {
 		}
 	}
 
-	public static com.liferay.portal.kernel.json.JSONObject getTopMostViewedRanomized(
+	public static com.liferay.portal.kernel.json.JSONObject getTopMostViewedRandomized(
 		HttpPrincipal httpPrincipal, int resultCount, int sampleCount,
 		com.liferay.portal.kernel.service.ServiceContext serviceContext) {
 		try {
 			MethodKey methodKey = new MethodKey(RecommendEntityServiceUtil.class,
-					"getTopMostViewedRanomized",
-					_getTopMostViewedRanomizedParameterTypes2);
+					"getTopMostViewedRandomized",
+					_getTopMostViewedRandomizedParameterTypes2);
 
 			MethodHandler methodHandler = new MethodHandler(methodKey,
 					resultCount, sampleCount, serviceContext);
@@ -147,7 +147,7 @@ public class RecommendEntityServiceHttp {
 	private static final Class<?>[] _getTopMostViewedParameterTypes1 = new Class[] {
 			int.class, com.liferay.portal.kernel.service.ServiceContext.class
 		};
-	private static final Class<?>[] _getTopMostViewedRanomizedParameterTypes2 = new Class[] {
+	private static final Class<?>[] _getTopMostViewedRandomizedParameterTypes2 = new Class[] {
 			int.class, int.class,
 			com.liferay.portal.kernel.service.ServiceContext.class
 		};

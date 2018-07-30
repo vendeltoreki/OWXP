@@ -96,12 +96,12 @@ public class RecommendEntityServiceSoap {
 		}
 	}
 
-	public static java.lang.String getTopMostViewedRanomized(int resultCount,
+	public static java.lang.String getTopMostViewedRandomized(int resultCount,
 		int sampleCount,
 		com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws RemoteException {
 		try {
-			com.liferay.portal.kernel.json.JSONObject returnValue = RecommendEntityServiceUtil.getTopMostViewedRanomized(resultCount,
+			com.liferay.portal.kernel.json.JSONObject returnValue = RecommendEntityServiceUtil.getTopMostViewedRandomized(resultCount,
 					sampleCount, serviceContext);
 
 			return returnValue.toString();

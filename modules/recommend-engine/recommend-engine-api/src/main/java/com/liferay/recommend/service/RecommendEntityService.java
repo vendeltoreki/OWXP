@@ -71,6 +71,6 @@ public interface RecommendEntityService extends BaseService {
 
 	@JSONWebService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public JSONObject getTopMostViewedRanomized(int resultCount,
+	public JSONObject getTopMostViewedRandomized(int resultCount,
 		int sampleCount, ServiceContext serviceContext);
 }
