@@ -1,0 +1,9 @@
+	Bundle-Name: Liferay Content Recommend Engine API
+Bundle-SymbolicName: com.liferay.recommend.api
+Bundle-Version: 1.0.0
+Export-Package:\
+	com.liferay.recommend.exception,\
+	com.liferay.recommend.model,\
+	com.liferay.recommend.service,\
+	com.liferay.recommend.service.persistence
+-includeresource: META-INF/service.xml=../recommend-engine-service/service.xml

@@ -1,0 +1,5 @@
+Bundle-Name: Liferay Content Recommend Engine Service
+Bundle-SymbolicName: com.liferay.recommend.service
+Bundle-Version: 1.0.0
+Liferay-Require-SchemaVersion: 1.0.0
+Liferay-Service: true

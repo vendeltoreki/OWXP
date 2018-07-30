@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<custom-sql>
+	<sql id="com.liferay.recommend.service.persistence.RecommendEntityFinder.countByU_C">
+		<![CDATA[
+			SELECT COUNT(*) AS COUNT_VALUE
+			FROM SocialActivitySet
+			INNER JOIN
+			(
+				SELECT SocialActivitySet.classPK, MAX(SocialActivitySet.modifiedDate) AS maxModifiedDate
+				FROM SocialActivitySet
+				WHERE
+					SocialActivitySet.userId = ? AND
+					SocialActivitySet.classNameId = ?
+				GROUP BY SocialActivitySet.classPK
+			) AS T1
+			ON (SocialActivitySet.classPK = T1.classPK and SocialActivitySet.modifiedDate = T1.maxModifiedDate)
+			ORDER BY modifiedDate DESC
+		]]>
+	</sql>
+</custom-sql>

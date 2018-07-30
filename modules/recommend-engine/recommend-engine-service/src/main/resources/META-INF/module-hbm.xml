@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN" "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping auto-import="false" default-lazy="false">
+	<import class="com.liferay.recommend.model.RecommendEntity" />
+	<class name="com.liferay.recommend.model.impl.RecommendEntityImpl" table="rec_RecommendEntity">
+		<id column="id_" name="id" type="long">
+			<generator class="assigned" />
+		</id>
+	</class>
+</hibernate-mapping>
