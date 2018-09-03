@@ -51,11 +51,11 @@ public class RecommendEntityServiceUtil {
 		return getService().getOSGiServiceIdentifier();
 	}
 
-	public static com.liferay.portal.kernel.json.JSONObject getStuff(
-		com.liferay.portal.kernel.service.ServiceContext serviceContext) {
-		return getService().getStuff(serviceContext);
-	}
-
+	/**
+	* NOTE FOR DEVELOPERS:
+	*
+	* Never reference this class directly. Always use {@link RecommendEntityServiceUtil} to access the recommend entity remote service.
+	*/
 	public static com.liferay.portal.kernel.json.JSONObject getTopMostViewed(
 		int resultCount,
 		com.liferay.portal.kernel.service.ServiceContext serviceContext) {

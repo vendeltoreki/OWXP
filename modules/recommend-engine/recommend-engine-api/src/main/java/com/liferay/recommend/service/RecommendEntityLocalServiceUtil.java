@@ -239,11 +239,11 @@ public class RecommendEntityLocalServiceUtil {
 		return getService().getRecommendEntity(id);
 	}
 
-	public static com.liferay.portal.kernel.json.JSONObject getStuff(
-		com.liferay.portal.kernel.service.ServiceContext serviceContext) {
-		return getService().getStuff(serviceContext);
-	}
-
+	/**
+	* NOTE FOR DEVELOPERS:
+	*
+	* Never reference this class directly. Always use {@link RecommendEntityLocalServiceUtil} to access the recommend entity local service.
+	*/
 	public static com.liferay.portal.kernel.json.JSONObject getTopMostViewed(
 		int resultCount,
 		com.liferay.portal.kernel.service.ServiceContext serviceContext) {

@@ -60,10 +60,11 @@ public interface RecommendEntityService extends BaseService {
 	*/
 	public java.lang.String getOSGiServiceIdentifier();
 
-	@JSONWebService
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public JSONObject getStuff(ServiceContext serviceContext);
-
+	/**
+	* NOTE FOR DEVELOPERS:
+	*
+	* Never reference this class directly. Always use {@link RecommendEntityServiceUtil} to access the recommend entity remote service.
+	*/
 	@JSONWebService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public JSONObject getTopMostViewed(int resultCount,

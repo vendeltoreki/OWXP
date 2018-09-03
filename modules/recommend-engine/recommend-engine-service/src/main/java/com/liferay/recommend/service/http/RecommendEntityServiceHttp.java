@@ -55,40 +55,12 @@ import com.liferay.recommend.service.RecommendEntityServiceUtil;
  */
 @ProviderType
 public class RecommendEntityServiceHttp {
-	public static com.liferay.portal.kernel.json.JSONObject getStuff(
-		HttpPrincipal httpPrincipal,
-		com.liferay.portal.kernel.service.ServiceContext serviceContext) {
-		try {
-			MethodKey methodKey = new MethodKey(RecommendEntityServiceUtil.class,
-					"getStuff", _getStuffParameterTypes0);
-
-			MethodHandler methodHandler = new MethodHandler(methodKey,
-					serviceContext);
-
-			Object returnObj = null;
-
-			try {
-				returnObj = TunnelUtil.invoke(httpPrincipal, methodHandler);
-			}
-			catch (Exception e) {
-				throw new com.liferay.portal.kernel.exception.SystemException(e);
-			}
-
-			return (com.liferay.portal.kernel.json.JSONObject)returnObj;
-		}
-		catch (com.liferay.portal.kernel.exception.SystemException se) {
-			_log.error(se, se);
-
-			throw se;
-		}
-	}
-
 	public static com.liferay.portal.kernel.json.JSONObject getTopMostViewed(
 		HttpPrincipal httpPrincipal, int resultCount,
 		com.liferay.portal.kernel.service.ServiceContext serviceContext) {
 		try {
 			MethodKey methodKey = new MethodKey(RecommendEntityServiceUtil.class,
-					"getTopMostViewed", _getTopMostViewedParameterTypes1);
+					"getTopMostViewed", _getTopMostViewedParameterTypes0);
 
 			MethodHandler methodHandler = new MethodHandler(methodKey,
 					resultCount, serviceContext);
@@ -117,7 +89,7 @@ public class RecommendEntityServiceHttp {
 		try {
 			MethodKey methodKey = new MethodKey(RecommendEntityServiceUtil.class,
 					"getTopMostViewedRandomized",
-					_getTopMostViewedRandomizedParameterTypes2);
+					_getTopMostViewedRandomizedParameterTypes1);
 
 			MethodHandler methodHandler = new MethodHandler(methodKey,
 					resultCount, sampleCount, serviceContext);
@@ -141,13 +113,10 @@ public class RecommendEntityServiceHttp {
 	}
 
 	private static Log _log = LogFactoryUtil.getLog(RecommendEntityServiceHttp.class);
-	private static final Class<?>[] _getStuffParameterTypes0 = new Class[] {
-			com.liferay.portal.kernel.service.ServiceContext.class
-		};
-	private static final Class<?>[] _getTopMostViewedParameterTypes1 = new Class[] {
+	private static final Class<?>[] _getTopMostViewedParameterTypes0 = new Class[] {
 			int.class, com.liferay.portal.kernel.service.ServiceContext.class
 		};
-	private static final Class<?>[] _getTopMostViewedRandomizedParameterTypes2 = new Class[] {
+	private static final Class<?>[] _getTopMostViewedRandomizedParameterTypes1 = new Class[] {
 			int.class, int.class,
 			com.liferay.portal.kernel.service.ServiceContext.class
 		};

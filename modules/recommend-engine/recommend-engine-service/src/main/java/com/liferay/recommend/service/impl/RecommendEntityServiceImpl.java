@@ -45,11 +45,6 @@ public class RecommendEntityServiceImpl extends RecommendEntityServiceBaseImpl {
 	 * Never reference this class directly. Always use {@link com.liferay.recommend.service.RecommendEntityServiceUtil} to access the recommend entity remote service.
 	 */
 	@JSONWebService
-	public JSONObject getStuff(ServiceContext serviceContext) {
-		return recommendEntityLocalService.getStuff(serviceContext);
-	}
-
-	@JSONWebService
 	public JSONObject getTopMostViewed(
 		int resultCount, ServiceContext serviceContext) {
 

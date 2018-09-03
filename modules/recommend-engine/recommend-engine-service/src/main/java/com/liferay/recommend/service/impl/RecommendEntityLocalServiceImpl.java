@@ -59,26 +59,6 @@ public class RecommendEntityLocalServiceImpl
 	 *
 	 * Never reference this class directly. Always use {@link com.liferay.recommend.service.RecommendEntityLocalServiceUtil} to access the recommend entity local service.
 	 */
-	public JSONObject getStuff(ServiceContext serviceContext) {
-		if (_log.isDebugEnabled()) {
-			_log.debug("getStuff() called.");
-		}
-
-		int n = 10;
-
-		List<AssetEntry> topViewedEntries = _getMostViewedWikiPageAssets(n);
-
-		JSONArray recommendationsJSONArray =
-			_createJsonArrayFromWikiPageAssetEntries(
-				serviceContext, topViewedEntries);
-
-		JSONObject jsonObject = JSONFactoryUtil.createJSONObject();
-
-		jsonObject.put("topRecommendations", recommendationsJSONArray);
-
-		return jsonObject;
-	}
-
 	public JSONObject getTopMostViewed(
 		int resultCount, ServiceContext serviceContext) {
 

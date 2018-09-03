@@ -65,21 +65,11 @@ import java.rmi.RemoteException;
  */
 @ProviderType
 public class RecommendEntityServiceSoap {
-	public static java.lang.String getStuff(
-		com.liferay.portal.kernel.service.ServiceContext serviceContext)
-		throws RemoteException {
-		try {
-			com.liferay.portal.kernel.json.JSONObject returnValue = RecommendEntityServiceUtil.getStuff(serviceContext);
-
-			return returnValue.toString();
-		}
-		catch (Exception e) {
-			_log.error(e, e);
-
-			throw new RemoteException(e.getMessage());
-		}
-	}
-
+	/**
+	* NOTE FOR DEVELOPERS:
+	*
+	* Never reference this class directly. Always use {@link RecommendEntityServiceUtil} to access the recommend entity remote service.
+	*/
 	public static java.lang.String getTopMostViewed(int resultCount,
 		com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws RemoteException {

@@ -243,7 +243,7 @@ public class WikiTextExtractor {
 	}
 
 	private String _removeSpecialChars(String text) {
-		text = text.replaceAll("[\\^\u00a0\u25c4\u2190]", " ");
+		text = text.replaceAll("[\\^\\`\u00a0\u25c4\u25ba\u2190]", " ");
 
 		return text;
 	}

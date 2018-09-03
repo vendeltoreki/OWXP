@@ -252,12 +252,11 @@ public class RecommendEntityLocalServiceWrapper
 		return _recommendEntityLocalService.getRecommendEntity(id);
 	}
 
-	@Override
-	public com.liferay.portal.kernel.json.JSONObject getStuff(
-		com.liferay.portal.kernel.service.ServiceContext serviceContext) {
-		return _recommendEntityLocalService.getStuff(serviceContext);
-	}
-
+	/**
+	* NOTE FOR DEVELOPERS:
+	*
+	* Never reference this class directly. Always use {@link RecommendEntityLocalServiceUtil} to access the recommend entity local service.
+	*/
 	@Override
 	public com.liferay.portal.kernel.json.JSONObject getTopMostViewed(
 		int resultCount,

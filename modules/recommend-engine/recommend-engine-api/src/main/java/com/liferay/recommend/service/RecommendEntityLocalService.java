@@ -221,9 +221,11 @@ public interface RecommendEntityLocalService extends BaseLocalService,
 	public RecommendEntity getRecommendEntity(long id)
 		throws PortalException;
 
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public JSONObject getStuff(ServiceContext serviceContext);
-
+	/**
+	* NOTE FOR DEVELOPERS:
+	*
+	* Never reference this class directly. Always use {@link RecommendEntityLocalServiceUtil} to access the recommend entity local service.
+	*/
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public JSONObject getTopMostViewed(int resultCount,
 		ServiceContext serviceContext);
