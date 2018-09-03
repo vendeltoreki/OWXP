@@ -27,11 +27,13 @@ import aQute.bnd.annotation.ProviderType;
  */
 @ProviderType
 public class RecommendEntityImpl extends RecommendEntityBaseImpl {
-	/*
+
+	/**
 	 * NOTE FOR DEVELOPERS:
 	 *
 	 * Never reference this class directly. All methods that expect a recommend entity model instance should use the {@link com.liferay.recommend.model.RecommendEntity} interface instead.
 	 */
 	public RecommendEntityImpl() {
 	}
+
 }

@@ -14,19 +14,19 @@
 
 package com.liferay.recommend.service.impl;
 
-import org.osgi.service.component.annotations.Component;
-
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.jsonwebservice.JSONWebService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.recommend.service.RecommendEntityService;
 import com.liferay.recommend.service.base.RecommendEntityServiceBaseImpl;
 
+import org.osgi.service.component.annotations.Component;
+
 /**
  * The implementation of the recommend entity remote service.
  *
  * <p>
- * All custom service methods should be put in this class. Whenever methods are added, rerun ServiceBuilder to copy their definitions into the {@link com.liferay.recommend.service.RecommendEntityService} interface.
+ * All custom service methods should be put in this class. Whenever methods are added, rerun ServiceBuilder to copy their definitions into the {@link RecommendEntityService} interface.
  *
  * <p>
  * This is a remote service. Methods of this service are expected to have security checks based on the propagated JAAS credentials because this service can be accessed remotely.
@@ -38,25 +38,31 @@ import com.liferay.recommend.service.base.RecommendEntityServiceBaseImpl;
  */
 @Component(immediate = true, service = RecommendEntityService.class)
 public class RecommendEntityServiceImpl extends RecommendEntityServiceBaseImpl {
-	/*
+
+	/**
 	 * NOTE FOR DEVELOPERS:
 	 *
 	 * Never reference this class directly. Always use {@link com.liferay.recommend.service.RecommendEntityServiceUtil} to access the recommend entity remote service.
 	 */
-
 	@JSONWebService
 	public JSONObject getStuff(ServiceContext serviceContext) {
 		return recommendEntityLocalService.getStuff(serviceContext);
 	}
 
 	@JSONWebService
-	public JSONObject getTopMostViewed(int resultCount, ServiceContext serviceContext) {
-		return recommendEntityLocalService.getTopMostViewed(resultCount, serviceContext);
+	public JSONObject getTopMostViewed(
+		int resultCount, ServiceContext serviceContext) {
+
+		return recommendEntityLocalService.getTopMostViewed(
+			resultCount, serviceContext);
 	}
 
 	@JSONWebService
-	public JSONObject getTopMostViewedRandomized(int resultCount, int sampleCount, ServiceContext serviceContext) {
-		return recommendEntityLocalService.getTopMostViewedRandomized(resultCount, sampleCount, serviceContext);
+	public JSONObject getTopMostViewedRandomized(
+		int resultCount, int sampleCount, ServiceContext serviceContext) {
+
+		return recommendEntityLocalService.getTopMostViewedRandomized(
+			resultCount, sampleCount, serviceContext);
 	}
-	
+
 }

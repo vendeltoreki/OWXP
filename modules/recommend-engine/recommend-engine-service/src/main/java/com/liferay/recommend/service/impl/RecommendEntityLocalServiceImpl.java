@@ -14,10 +14,6 @@
 
 package com.liferay.recommend.service.impl;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
 import com.liferay.asset.kernel.model.AssetEntry;
 import com.liferay.asset.kernel.model.AssetRenderer;
 import com.liferay.asset.kernel.service.AssetEntryLocalService;
@@ -37,6 +33,10 @@ import com.liferay.recommend.service.base.RecommendEntityLocalServiceBaseImpl;
 import com.liferay.recommend.service.util.WikiTextExtractor;
 import com.liferay.wiki.model.WikiPage;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 /**
  * The implementation of the recommend entity local service.
  *
@@ -53,121 +53,184 @@ import com.liferay.wiki.model.WikiPage;
  */
 public class RecommendEntityLocalServiceImpl
 	extends RecommendEntityLocalServiceBaseImpl {
-	/*
+
+	/**
 	 * NOTE FOR DEVELOPERS:
 	 *
 	 * Never reference this class directly. Always use {@link com.liferay.recommend.service.RecommendEntityLocalServiceUtil} to access the recommend entity local service.
 	 */
-	 
 	public JSONObject getStuff(ServiceContext serviceContext) {
-		_log.info("getStuff() called.");
-	
+		if (_log.isDebugEnabled()) {
+			_log.debug("getStuff() called.");
+		}
+
 		int n = 10;
-		
-		List<AssetEntry> topViewedEntries = getMostViewedWikiPageAssets(n);
-		
-		JSONArray recommendationsJSONArray = createJsonArrayFromWikiPageAssetEntries(serviceContext, topViewedEntries);
-		
+
+		List<AssetEntry> topViewedEntries = _getMostViewedWikiPageAssets(n);
+
+		JSONArray recommendationsJSONArray =
+			_createJsonArrayFromWikiPageAssetEntries(
+				serviceContext, topViewedEntries);
+
 		JSONObject jsonObject = JSONFactoryUtil.createJSONObject();
+
 		jsonObject.put("topRecommendations", recommendationsJSONArray);
-		
+
 		return jsonObject;
 	}
 
-	public JSONObject getTopMostViewed(int resultCount, ServiceContext serviceContext) {
-		_log.info("getTopMostViewed("+resultCount+") called.");
-		
-		List<AssetEntry> assetEntries = getMostViewedWikiPageAssets(resultCount);
-		
-		JSONArray recommendationsJSONArray = createJsonArrayFromWikiPageAssetEntries(serviceContext, assetEntries);
-		
+	public JSONObject getTopMostViewed(
+		int resultCount, ServiceContext serviceContext) {
+
+		if (_log.isDebugEnabled()) {
+			_log.debug("getTopMostViewed(" + resultCount + ") called.");
+		}
+
+		List<AssetEntry> assetEntries = _getMostViewedWikiPageAssets(
+			resultCount);
+
+		JSONArray recommendationsJSONArray =
+			_createJsonArrayFromWikiPageAssetEntries(
+				serviceContext, assetEntries);
+
 		JSONObject jsonObject = JSONFactoryUtil.createJSONObject();
+
 		jsonObject.put("topRecommendations", recommendationsJSONArray);
-		
+
 		return jsonObject;
 	}
 
-	public JSONObject getTopMostViewedRandomized(int resultCount, int sampleCount, ServiceContext serviceContext) {
-		_log.info("getTopMostViewedRanomized("+resultCount+", "+sampleCount+") called.");
-		
-		List<AssetEntry> assetEntries = getMostViewedWikiPageAssetsRandomized(resultCount, sampleCount);
-		
-		JSONArray recommendationsJSONArray = createJsonArrayFromWikiPageAssetEntries(serviceContext, assetEntries);
-		
+	public JSONObject getTopMostViewedRandomized(
+		int resultCount, int sampleCount, ServiceContext serviceContext) {
+
+		if (_log.isDebugEnabled()) {
+			_log.debug(
+				"getTopMostViewedRanomized(" + resultCount + ", " +
+					sampleCount + ") called.");
+		}
+
+		List<AssetEntry> assetEntries = _getMostViewedWikiPageAssetsRandomized(
+			resultCount, sampleCount);
+
+		JSONArray recommendationsJSONArray =
+			_createJsonArrayFromWikiPageAssetEntries(
+				serviceContext, assetEntries);
+
 		JSONObject jsonObject = JSONFactoryUtil.createJSONObject();
+
 		jsonObject.put("topRecommendations", recommendationsJSONArray);
-		
+
 		return jsonObject;
 	}
 
-	private JSONArray createJsonArrayFromWikiPageAssetEntries(ServiceContext serviceContext,
-			List<AssetEntry> topViewedEntries) {
+	private JSONArray _createJsonArrayFromWikiPageAssetEntries(
+		ServiceContext serviceContext, List<AssetEntry> topViewedEntries) {
+
 		JSONArray recommendationsJSONArray = JSONFactoryUtil.createJSONArray();
+
 		WikiTextExtractor wikiTextExtractor = new WikiTextExtractor();
+
 		wikiTextExtractor.setTitleSeparator("|");
-		
+
 		for (AssetEntry assetEntry : topViewedEntries) {
-			_log.info("Top Entry: "+assetEntry);
-			
+			if (_log.isDebugEnabled()) {
+				_log.debug("Top Entry: " + assetEntry);
+			}
+
 			AssetRenderer<?> assetRenderer = assetEntry.getAssetRenderer();
 
-			if (assetRenderer != null && assetRenderer.getAssetObject() instanceof WikiPage) {
+			if ((assetRenderer != null) &&
+				(assetRenderer.getAssetObject() instanceof WikiPage)) {
+
 				WikiPage wikiPage = (WikiPage)assetRenderer.getAssetObject();
 
 				String userPortraitUrl = null;
-				
+
 				try {
 					ThemeDisplay themeDisplay = new ThemeDisplay();
-					User user = _userLocalService.fetchUser(assetEntry.getUserId());
+
+					User user = _userLocalService.fetchUser(
+						assetEntry.getUserId());
+
 					userPortraitUrl = user.getPortraitURL(themeDisplay);
-				} catch (PortalException e) {
-					_log.error("Error while retrieving user portrait URL", e);
 				}
-				
-				String url = serviceContext.getPortalURL() + "/share/" + getNormalizedTitle(assetEntry.getTitle());
-				
+				catch (PortalException pe) {
+					_log.error("Error while retrieving user portrait URL", pe);
+				}
+
+				String url =
+					serviceContext.getPortalURL() + "/share/" +
+						_getNormalizedTitle(assetEntry.getTitle());
+
 				JSONObject entryJSONObject = JSONFactoryUtil.createJSONObject();
+
 				entryJSONObject.put("id", assetEntry.getClassPK());
+
 				entryJSONObject.put("userName", assetEntry.getUserName());
+
 				entryJSONObject.put("viewCount", assetEntry.getViewCount());
+
 				entryJSONObject.put("title", assetEntry.getTitle());
-				entryJSONObject.put("contentSample", wikiTextExtractor.truncateWikiContent(wikiPage.getContent(), wikiPage.getFormat(), 1000));
+
+				entryJSONObject.put(
+					"contentSample",
+					wikiTextExtractor.truncateWikiContent(
+						wikiPage.getContent(), wikiPage.getFormat(), 1000));
+
 				entryJSONObject.put("url", url);
+
 				entryJSONObject.put("userPortraitUrl", userPortraitUrl);
-				
+
 				recommendationsJSONArray.put(entryJSONObject);
 			}
 		}
+
 		return recommendationsJSONArray;
 	}
 
-	private List<AssetEntry> getMostViewedWikiPageAssets(int resultCount) {
-		List<AssetEntry> wikiPageAssets = removeRootTitles(_assetEntryLocalService.getTopViewedEntries(WikiPage.class.getCanonicalName(), false, 0, resultCount + ROOT_TITLES.length));
-		
-		return truncateList(wikiPageAssets, resultCount);
+	private boolean _equalsAny(String text, String[] search) {
+		for (String searchString : search) {
+			if ((searchString != null) && searchString.equals(text)) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
-	private List<AssetEntry> getMostViewedWikiPageAssetsRandomized(int resultCount, int sampleCount) {
-		List<AssetEntry> wikiPageAssets = removeRootTitles(_assetEntryLocalService.getTopViewedEntries(WikiPage.class.getCanonicalName(), false, 0, sampleCount + ROOT_TITLES.length));
-		
+	private List<AssetEntry> _getMostViewedWikiPageAssets(int resultCount) {
+		List<AssetEntry> wikiPageAssets = _removeRootTitles(
+			_assetEntryLocalService.getTopViewedEntries(
+				WikiPage.class.getCanonicalName(), false, 0,
+				resultCount + _ROOT_TITLES.length));
+
+		return _truncateList(wikiPageAssets, resultCount);
+	}
+
+	private List<AssetEntry> _getMostViewedWikiPageAssetsRandomized(
+		int resultCount, int sampleCount) {
+
+		List<AssetEntry> wikiPageAssets = _removeRootTitles(
+			_assetEntryLocalService.getTopViewedEntries(
+				WikiPage.class.getCanonicalName(), false, 0,
+				sampleCount + _ROOT_TITLES.length));
+
 		Collections.shuffle(wikiPageAssets);
-		
-		return truncateList(wikiPageAssets, resultCount);
+
+		return _truncateList(wikiPageAssets, resultCount);
 	}
-	
-	private List<AssetEntry> truncateList(List<AssetEntry> assetList, int resultCount) {
-		if (assetList.size() > resultCount) {
-			return assetList.subList(0, resultCount);
-		} else {
-			return assetList;
-		}
+
+	private String _getNormalizedTitle(String title) {
+		String normalized = StringUtil.toLowerCase(title);
+
+		return StringUtil.replace(normalized, _REPLACE, _REPLACE_WITH);
 	}
-	
-	private List<AssetEntry> removeRootTitles(List<AssetEntry> assetEntries) {
+
+	private List<AssetEntry> _removeRootTitles(List<AssetEntry> assetEntries) {
 		List<AssetEntry> res = new ArrayList<>();
 
 		for (AssetEntry assetEntry : assetEntries) {
-			if (!equalsAny(assetEntry.getTitle(), ROOT_TITLES)) {
+			if (!_equalsAny(assetEntry.getTitle(), _ROOT_TITLES)) {
 				res.add(assetEntry);
 			}
 		}
@@ -175,44 +238,41 @@ public class RecommendEntityLocalServiceImpl
 		return res;
 	}
 
-	private boolean equalsAny(String text, String[] search) {
-		for (String searchString : search) {
-			if (searchString != null && searchString.equals(text)) {
-				return true;
-			}
+	private List<AssetEntry> _truncateList(
+		List<AssetEntry> assetList, int resultCount) {
+
+		if (assetList.size() > resultCount) {
+			return assetList.subList(0, resultCount);
 		}
-		return false;
+		else {
+			return assetList;
+		}
 	}
 
-	private static final Log _log = LogFactoryUtil.getLog(
-			RecommendEntityLocalServiceImpl.class);
-	
-	private static final String[] ROOT_TITLES = new String[] {"Share", "People", "Excellence", "Learn"};
-	
-	private String getNormalizedTitle(String title) {
-		String normalized = StringUtil.toLowerCase(title);
-
-		return StringUtil.replace(normalized, REPLACE, REPLACE_WITH);
-	}
-
-	private static final char[] REPLACE = {
-		'\u00e1', '\u00e9', '\u00ed', '\u00fa', '\u00fc',
-		'\u0171', '\u00f3', '\u00f6', '\u0151', '&', '\'', '@', ']', ')',
-		':', ',', '$', '=', '!', '[', '(', '#', '?', ';', '/', '*', '+', ' '
+	private static final char[] _REPLACE = {
+		'\u00e1', '\u00e9', '\u00ed', '\u00fa', '\u00fc', '\u0171', '\u00f3',
+		'\u00f6', '\u0151', '&', '\'', '@', ']', ')', ':', ',', '$', '=', '!',
+		'[', '(', '#', '?', ';', '/', '*', '+', ' '
 	};
 
-	private static final String[] REPLACE_WITH = {
+	private static final String[] _REPLACE_WITH = {
 		"a", "e", "i", "u", "u", "u", "o", "o", "o", "AMPERSAND", "APOSTROPHE",
 		"AT", "CLOSE_BRACKET", "<CLOSE_PARENTHESIS>", "<COLON>", "<COMMA>",
 		"<DOLLAR>", "<EQUAL>", "<EXCLAMATION>", "<OPEN_BRACKET>",
-		"<OPEN_PARENTHESIS>", "<POUND>", "<QUESTION>", "<SEMICOLON>",
-		"<SLASH>", "<STAR>","<PLUS>","+"
+		"<OPEN_PARENTHESIS>", "<POUND>", "<QUESTION>", "<SEMICOLON>", "<SLASH>",
+		"<STAR>", "<PLUS>", "+"
 	};
-	
+
+	private static final String[] _ROOT_TITLES =
+		{"Share", "People", "Excellence", "Learn"};
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		RecommendEntityLocalServiceImpl.class);
+
 	@BeanReference(type = AssetEntryLocalService.class)
 	private AssetEntryLocalService _assetEntryLocalService;
 
 	@BeanReference(type = UserLocalService.class)
 	private UserLocalService _userLocalService;
-	
+
 }
