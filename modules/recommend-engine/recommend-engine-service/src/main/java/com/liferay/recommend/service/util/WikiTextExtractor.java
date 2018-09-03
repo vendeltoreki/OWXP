@@ -1,6 +1,16 @@
 package com.liferay.recommend.service.util;
 
 public class WikiTextExtractor {
+	private String titleSeparator = "*";
+
+	public String getTitleSeparator() {
+		return titleSeparator;
+	}
+
+	public void setTitleSeparator(String titleSeparator) {
+		this.titleSeparator = titleSeparator;
+	}
+
 	public String truncateWikiContent(String content, String format, int size) {
 		content = removeSpecialChars(content);
 		
@@ -200,11 +210,15 @@ public class WikiTextExtractor {
 		if (text.startsWith("* ")) {
 			text = text.substring(2);
 		}
-		
+
 		text = text.replaceAll("^Description \\* ", "");
 		text = text.replaceAll("^Overview \\* ", "");
 		text = text.replaceAll("^Back to (.+?) page \\* ", "");
-		
+
+		if (!titleSeparator.equals("*")) {
+			text = text.replaceAll("\\*", titleSeparator);
+		}
+
 		return text;
 	}	
 

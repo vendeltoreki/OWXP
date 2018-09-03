@@ -104,6 +104,7 @@ public class RecommendEntityLocalServiceImpl
 			List<AssetEntry> topViewedEntries) {
 		JSONArray recommendationsJSONArray = JSONFactoryUtil.createJSONArray();
 		WikiTextExtractor wikiTextExtractor = new WikiTextExtractor();
+		wikiTextExtractor.setTitleSeparator("|");
 		
 		for (AssetEntry assetEntry : topViewedEntries) {
 			_log.info("Top Entry: "+assetEntry);
