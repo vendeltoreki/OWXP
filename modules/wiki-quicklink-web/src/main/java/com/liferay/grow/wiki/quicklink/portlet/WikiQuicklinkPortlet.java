@@ -162,7 +162,7 @@ public class WikiQuicklinkPortlet extends MVCPortlet {
 
 	private static final char[] REPLACE = {
 		'á', 'é', 'í', 'ú', 'ü', '\u0171', 'ó', 'ö', '\u0151', '&', '\'', '@', ']', ')',
-		':', ',', '$', '=', '!', '[', '(', '#', '?', ';', '/', '*', '+', ' '
+		':', ',', '$', '=', '!', '[', '(', '#', '?', ';', '/', '*', '+', ' ', '\u00a0'
 	};
 
 	private static final String[] REPLACE_WITH = {
@@ -170,7 +170,7 @@ public class WikiQuicklinkPortlet extends MVCPortlet {
 		"<APOSTROPHE>","<AT>", "<CLOSE_BRACKET>", "<CLOSE_PARENTHESIS>",
 		"<COLON>", "<COMMA>","<DOLLAR>", "<EQUAL>", "<EXCLAMATION>",
 		"<OPEN_BRACKET>", "<OPEN_PARENTHESIS>", "<POUND>", "<QUESTION>",
-		"<SEMICOLON>","<SLASH>", "<STAR>","<PLUS>","+"
+		"<SEMICOLON>","<SLASH>", "<STAR>","<PLUS>","+","%c2%a0"
 	};
 
 	private WikiPageLocalService _wikiPageLocalService;

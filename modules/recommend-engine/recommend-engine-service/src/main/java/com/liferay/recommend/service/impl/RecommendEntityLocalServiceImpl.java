@@ -232,7 +232,7 @@ public class RecommendEntityLocalServiceImpl
 	private static final char[] _REPLACE = {
 		'\u00e1', '\u00e9', '\u00ed', '\u00fa', '\u00fc', '\u0171', '\u00f3',
 		'\u00f6', '\u0151', '&', '\'', '@', ']', ')', ':', ',', '$', '=', '!',
-		'[', '(', '#', '?', ';', '/', '*', '+', ' '
+		'[', '(', '#', '?', ';', '/', '*', '+', ' ', '\u00a0'
 	};
 
 	private static final String[] _REPLACE_WITH = {
@@ -240,7 +240,7 @@ public class RecommendEntityLocalServiceImpl
 			"<APOSTROPHE>","<AT>", "<CLOSE_BRACKET>", "<CLOSE_PARENTHESIS>",
 			"<COLON>", "<COMMA>","<DOLLAR>", "<EQUAL>", "<EXCLAMATION>",
 			"<OPEN_BRACKET>", "<OPEN_PARENTHESIS>", "<POUND>", "<QUESTION>",
-			"<SEMICOLON>","<SLASH>", "<STAR>","<PLUS>","+"
+			"<SEMICOLON>","<SLASH>", "<STAR>","<PLUS>","+","%c2%a0"
 		};
 
 	private static final String[] _ROOT_TITLES =
