@@ -28,13 +28,18 @@ import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.DateUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.recommend.service.base.RecommendEntityLocalServiceBaseImpl;
 import com.liferay.recommend.service.util.WikiTextExtractor;
 import com.liferay.wiki.model.WikiPage;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.List;
 
 /**
@@ -54,11 +59,6 @@ import java.util.List;
 public class RecommendEntityLocalServiceImpl
 	extends RecommendEntityLocalServiceBaseImpl {
 
-	/**
-	 * NOTE FOR DEVELOPERS:
-	 *
-	 * Never reference this class directly. Always use {@link com.liferay.recommend.service.RecommendEntityLocalServiceUtil} to access the recommend entity local service.
-	 */
 	public JSONObject getTopMostViewed(
 		int resultCount, ServiceContext serviceContext) {
 
@@ -103,6 +103,11 @@ public class RecommendEntityLocalServiceImpl
 		return jsonObject;
 	}
 
+	/**
+	 * NOTE FOR DEVELOPERS:
+	 *
+	 * Never reference this class directly. Always use {@link com.liferay.recommend.service.RecommendEntityLocalServiceUtil} to access the recommend entity local service.
+	 */
 	private JSONArray _createJsonArrayFromWikiPageAssetEntries(
 		ServiceContext serviceContext, List<AssetEntry> topViewedEntries) {
 
@@ -178,11 +183,23 @@ public class RecommendEntityLocalServiceImpl
 		return false;
 	}
 
+	private Date _getDateBeforeMonths(int months) {
+		Calendar calendar = new GregorianCalendar();
+
+		calendar.setTime(new Date());
+
+		calendar.add(Calendar.MONTH, -months);
+
+		return calendar.getTime();
+	}
+
 	private List<AssetEntry> _getMostViewedWikiPageAssets(int resultCount) {
 		List<AssetEntry> wikiPageAssets = _removeRootTitles(
 			_assetEntryLocalService.getTopViewedEntries(
 				WikiPage.class.getCanonicalName(), false, 0,
-				resultCount + _ROOT_TITLES.length));
+				resultCount + _ROOT_TITLES.length + _LOAD_EXTRA_ASSET_ENTRIES));
+
+		wikiPageAssets = _removeOldEntries(wikiPageAssets, resultCount);
 
 		return _truncateList(wikiPageAssets, resultCount);
 	}
@@ -193,7 +210,9 @@ public class RecommendEntityLocalServiceImpl
 		List<AssetEntry> wikiPageAssets = _removeRootTitles(
 			_assetEntryLocalService.getTopViewedEntries(
 				WikiPage.class.getCanonicalName(), false, 0,
-				sampleCount + _ROOT_TITLES.length));
+				sampleCount + _LOAD_EXTRA_ASSET_ENTRIES + _ROOT_TITLES.length));
+
+		wikiPageAssets = _removeOldEntries(wikiPageAssets, sampleCount);
 
 		Collections.shuffle(wikiPageAssets);
 
@@ -204,6 +223,62 @@ public class RecommendEntityLocalServiceImpl
 		String normalized = StringUtil.toLowerCase(title);
 
 		return StringUtil.replace(normalized, _REPLACE, _REPLACE_WITH);
+	}
+
+	private List<AssetEntry> _removeOldEntries(
+		List<AssetEntry> assetEntries, int minimumEntries) {
+
+		Date limitDate = _getDateBeforeMonths(
+			_EXCLUDE_ENTRIES_LAST_MODIFIED_BEFORE_MONTHS);
+
+		long removeCount = assetEntries.stream().filter(
+			x -> x.getModifiedDate().before(limitDate)).count();
+
+		if (_log.isDebugEnabled()) {
+			_log.debug(
+				"_removeOldEntries: entries=" + assetEntries.size() + ", min=" +
+					minimumEntries + ", limit=\"" + limitDate +
+						"\", removeCount=" + removeCount);
+		}
+
+		if ((assetEntries.size() - removeCount) >= minimumEntries) {
+			assetEntries.removeIf(x -> x.getModifiedDate().before(limitDate));
+
+			if (_log.isDebugEnabled()) {
+				_log.debug(
+					"Removed " + removeCount +
+						" entries from list. New size: " + assetEntries.size());
+			}
+		}
+		else {
+			if (_log.isDebugEnabled()) {
+				_log.debug(
+					"Not removing all entries before " + limitDate +
+						", to keep the minimum number of entries (" +
+							minimumEntries + ")");
+			}
+
+			Collections.sort(
+				assetEntries,
+				new Comparator<AssetEntry>() {
+
+					@Override
+					public int compare(AssetEntry o1, AssetEntry o2) {
+						return DateUtil.compareTo(
+							o2.getModifiedDate(), o1.getModifiedDate());
+					}
+
+				});
+
+			assetEntries = _truncateList(assetEntries, minimumEntries);
+
+			Collections.sort(
+				assetEntries,
+				(p1, p2) -> Integer.compare(
+					p2.getViewCount(), p1.getViewCount()));
+		}
+
+		return assetEntries;
 	}
 
 	private List<AssetEntry> _removeRootTitles(List<AssetEntry> assetEntries) {
@@ -229,6 +304,10 @@ public class RecommendEntityLocalServiceImpl
 		}
 	}
 
+	private static final int _EXCLUDE_ENTRIES_LAST_MODIFIED_BEFORE_MONTHS = 6;
+
+	private static final int _LOAD_EXTRA_ASSET_ENTRIES = 100;
+
 	private static final char[] _REPLACE = {
 		'\u00e1', '\u00e9', '\u00ed', '\u00fa', '\u00fc', '\u0171', '\u00f3',
 		'\u00f6', '\u0151', '&', '\'', '@', ']', ')', ':', ',', '$', '=', '!',
@@ -236,12 +315,12 @@ public class RecommendEntityLocalServiceImpl
 	};
 
 	private static final String[] _REPLACE_WITH = {
-			"a", "e", "i", "u", "u", "u", "o", "o", "o", "<AMPERSAND>",
-			"<APOSTROPHE>","<AT>", "<CLOSE_BRACKET>", "<CLOSE_PARENTHESIS>",
-			"<COLON>", "<COMMA>","<DOLLAR>", "<EQUAL>", "<EXCLAMATION>",
-			"<OPEN_BRACKET>", "<OPEN_PARENTHESIS>", "<POUND>", "<QUESTION>",
-			"<SEMICOLON>","<SLASH>", "<STAR>","<PLUS>","+","%c2%a0"
-		};
+		"a", "e", "i", "u", "u", "u", "o", "o", "o", "<AMPERSAND>",
+		"<APOSTROPHE>", "<AT>", "<CLOSE_BRACKET>", "<CLOSE_PARENTHESIS>",
+		"<COLON>", "<COMMA>", "<DOLLAR>", "<EQUAL>", "<EXCLAMATION>",
+		"<OPEN_BRACKET>", "<OPEN_PARENTHESIS>", "<POUND>", "<QUESTION>",
+		"<SEMICOLON>", "<SLASH>", "<STAR>", "<PLUS>", "+", "%c2%a0"
+	};
 
 	private static final String[] _ROOT_TITLES =
 		{"Share", "People", "Excellence", "Learn"};
