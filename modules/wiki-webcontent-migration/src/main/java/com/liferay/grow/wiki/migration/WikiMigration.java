@@ -7,15 +7,8 @@ import org.osgi.service.component.annotations.Component;
 /**
  * @author Liferay
  */
-@Component(
-	immediate = true,
-	property = {
-		// TODO enter required service properties
-	},
-	service = WikiMigration.class
-)
-public class WikiMigration {
 
-	// TODO enter required service methods
+public interface WikiMigration {
 
+	public void migrateWikis();
 }
