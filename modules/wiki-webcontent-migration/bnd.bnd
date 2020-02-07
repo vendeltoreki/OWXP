@@ -1,0 +1,3 @@
+Bundle-Name: wiki-webcontent-migration
+Bundle-SymbolicName: com.liferay.grow.wiki.migration
+Bundle-Version: 1.0.0
