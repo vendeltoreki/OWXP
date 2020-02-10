@@ -8,9 +8,13 @@ import com.liferay.dynamic.data.mapping.model.DDMStructure;
 import com.liferay.dynamic.data.mapping.model.DDMTemplate;
 import com.liferay.dynamic.data.mapping.service.DDMStructureLocalServiceUtil;
 import com.liferay.journal.model.JournalArticle;
+import com.liferay.journal.service.JournalArticleLocalServiceUtil;
 import com.liferay.petra.xml.XMLUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.repository.model.FileEntry;
+import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.xml.Document;
 import com.liferay.portal.kernel.xml.Element;
 import com.liferay.portal.kernel.xml.SAXReaderUtil;
@@ -19,8 +23,11 @@ import com.liferay.wiki.model.WikiPageDisplay;
 import com.liferay.wiki.service.WikiPageLocalServiceUtil;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
 import org.osgi.service.component.annotations.Component;
@@ -35,6 +42,20 @@ public class WikiMigrationImpl implements WikiMigration {
 		System.out.println("Starting Wiki migration");
 
 		init();
+
+		for (WikiPage page : pages) {
+			if (Validator.isNull(page.getParentTitle())) {
+				continue;
+			}
+
+			try {
+				if (resourcePrimKeys.contains(page.getResourcePrimKey())) {
+					convert(page);
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
 	}
 
 	private void init() {
@@ -93,6 +114,54 @@ public class WikiMigrationImpl implements WikiMigration {
 		}
 
 		return null;
+	}
+
+	public JournalArticle convert(WikiPage page) throws Exception {
+		ServiceContext serviceContext = new ServiceContext(); 
+		serviceContext.setScopeGroupId(page.getGroupId());
+		
+		List<FileEntry> attachments = page.getAttachmentsFileEntries();
+		System.out.println("attachments="+attachments.size());
+		
+		for (FileEntry attachment : attachments) {
+			System.out.println("attachment="+attachment.getFileName());
+		}
+		
+		String content = getContentXml(page);
+		
+		Locale locale = LocaleUtil.fromLanguageId("en_US");
+		
+		Map<Locale, String> titleMap = new HashMap<Locale, String>();
+		titleMap.put(locale, page.getTitle());
+
+		Map<Locale, String> descriptionMap = new HashMap<Locale, String>();
+		descriptionMap.put(locale, page.getSummary());
+		
+		JournalArticle article = JournalArticleLocalServiceUtil.addArticle(
+			page.getUserId(), page.getGroupId(), 
+			0, titleMap, descriptionMap, content, 
+			growStruct.getStructureKey(), growTemp.getTemplateKey(),
+			serviceContext);
+		
+		/*long id = CounterLocalServiceUtil.increment();
+		
+		ps.setString(1, getContentXml(page));
+		ps.setLong(2, id);
+		ps.executeUpdate();*/
+		
+		// Get childpages and run the main method for them as well
+		
+		List<WikiPage> childPages = page.getChildPages();
+		List<JournalArticle> childArticles = new LinkedList<JournalArticle>();
+
+		for (WikiPage childPage: childPages) {
+			childArticles.add(convert(childPage));
+		}
+		
+		// Create asset links
+		handleChildPages(article, childArticles);
+
+		return article;
 	}
 
 	private void addElement(Element rootElement, String name, String type, 
