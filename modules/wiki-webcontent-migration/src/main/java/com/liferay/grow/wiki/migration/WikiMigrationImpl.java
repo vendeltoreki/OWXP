@@ -44,7 +44,7 @@ public class WikiMigrationImpl implements WikiMigration {
 		init();
 
 		for (WikiPage page : pages) {
-			if (Validator.isNull(page.getParentTitle())) {
+			if (Validator.isNotNull(page.getParentTitle())) {
 				continue;
 			}
 
