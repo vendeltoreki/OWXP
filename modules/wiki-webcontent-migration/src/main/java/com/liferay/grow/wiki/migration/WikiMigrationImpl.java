@@ -28,6 +28,7 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.StringBundler;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.xml.Document;
 import com.liferay.portal.kernel.xml.Element;
@@ -135,9 +136,8 @@ public class WikiMigrationImpl implements WikiMigration {
 			_addElement(
 				rootElement, "content", "text_area", "text", "clfy", "en_US",
 				content);
-			_addElement(
-				rootElement, "ParentArticle", "ddm-journal-article", "keyword",
-				"dswq", "en_US", "");
+
+			_handleAttachments(rootElement, page.getAttachmentsFileEntries());
 
 			return XMLUtil.formatXML(document.asXML());
 		}
@@ -187,6 +187,28 @@ public class WikiMigrationImpl implements WikiMigration {
 
 		dynamicContentElement.addAttribute("language-id", languageId);
 		dynamicContentElement.addCDATA(content);
+	}
+
+	private void _handleAttachments(
+		Element rootElement, List<FileEntry> attachments) {
+
+		for(FileEntry attachment: attachments) {
+			StringBundler sb = new StringBundler();
+
+			sb.append("{\"classPK\":");
+			sb.append(attachment.getFileEntryId());
+			sb.append(",\"groupId\":");
+			sb.append(attachment.getGroupId());
+			sb.append(",\"title\":\"");
+			sb.append(attachment.getTitle());
+			sb.append("\",\"type\":\"document\",\"uuid\":\"");
+			sb.append(attachment.getUuid());
+			sb.append("\"}");
+
+			_addElement(
+				rootElement, "attachments", "document_library", "keyword",
+				"trnm", "en_US", sb.toString());
+		}
 	}
 
 	private void _handleChildPages(
@@ -239,10 +261,8 @@ public class WikiMigrationImpl implements WikiMigration {
 		System.out.println("n=" + _pages.size());
 	}
 
-	private List<FileEntry> _contentImages = new LinkedList<>();
 	private DDMStructure _growStruct;
 	private DDMTemplate _growTemp;
-	private List<FileEntry> _pageAttachments = new LinkedList<>();
 	private List<WikiPage> _pages;
 	private Set<Long> _resourcePrimKeys;
 
