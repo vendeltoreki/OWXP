@@ -1,3 +1,17 @@
+/**
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
+ *
+ * This library is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU Lesser General Public License as published by the Free
+ * Software Foundation; either version 2.1 of the License, or (at your option)
+ * any later version.
+ *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
+ */
+
 package com.liferay.grow.wiki.migration;
 
 import com.liferay.asset.kernel.model.AssetEntry;
@@ -22,7 +36,7 @@ import com.liferay.wiki.model.WikiPage;
 import com.liferay.wiki.model.WikiPageDisplay;
 import com.liferay.wiki.service.WikiPageLocalServiceUtil;
 
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -32,53 +46,63 @@ import java.util.Set;
 
 import org.osgi.service.component.annotations.Component;
 
-@Component(
-	service = WikiMigration.class
-)
+/**
+ * @author Vendel Toreki
+ * @author Laszlo Hudak
+ */
+@Component(service = WikiMigration.class)
 public class WikiMigrationImpl implements WikiMigration {
 
-	@Override
-	public void migrateWikis() {
-		System.out.println("Starting Wiki migration");
+	public JournalArticle convert(WikiPage page) throws Exception {
+		ServiceContext serviceContext = new ServiceContext();
 
-		init();
+		serviceContext.setScopeGroupId(page.getGroupId());
 
-		for (WikiPage page : pages) {
-			if (Validator.isNotNull(page.getParentTitle())) {
-				continue;
-			}
+		List<FileEntry> attachments = page.getAttachmentsFileEntries();
 
-			try {
-				if (resourcePrimKeys.contains(page.getResourcePrimKey())) {
-					convert(page);
-				}
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		}
-	}
+		System.out.println("attachments=" + attachments.size());
 
-	private void init() {
-		resourcePrimKeys.addAll(Arrays.asList(
-			//1489681L
-			1499375L
-		));
-
-		List<DDMStructure> structs = DDMStructureLocalServiceUtil.getStructures();
-		for (DDMStructure struct : structs) {
-			if (struct.getNameCurrentValue().contentEquals("GROW Article")) {
-				growStruct = struct;
-				break;
-			}
+		for (FileEntry attachment : attachments) {
+			System.out.println("attachment=" + attachment.getFileName());
 		}
 
-		growTemp = growStruct.getTemplates().get(0);
+		String content = getContentXml(page);
 
-		System.out.println("-- Found structure: \""+growStruct.getNameCurrentValue()+"\"");
-		System.out.println("-- Found template: \""+growTemp.getNameCurrentValue()+"\"");
+		Locale locale = LocaleUtil.fromLanguageId("en_US");
 
-		pages = WikiPageLocalServiceUtil.getPages("creole");
-		System.out.println("n="+pages.size());
+		Map<Locale, String> titleMap = new HashMap<>();
+
+		titleMap.put(locale, page.getTitle());
+
+		Map<Locale, String> descriptionMap = new HashMap<>();
+
+		descriptionMap.put(locale, page.getSummary());
+
+		JournalArticle article = JournalArticleLocalServiceUtil.addArticle(
+			page.getUserId(), page.getGroupId(), 0, titleMap, descriptionMap,
+			content, _growStruct.getStructureKey(), _growTemp.getTemplateKey(),
+			serviceContext);
+
+		/*long id = CounterLocalServiceUtil.increment();
+
+		ps.setString(1, getContentXml(page));
+		ps.setLong(2, id);
+		ps.executeUpdate();*/
+
+		// Get childpages and run the main method for them as well
+
+		List<WikiPage> childPages = page.getChildPages();
+		List<JournalArticle> childArticles = new LinkedList<>();
+
+		for (WikiPage childPage : childPages) {
+			childArticles.add(convert(childPage));
+		}
+
+		// Create asset links
+
+		_handleChildPages(article, childArticles);
+
+		return article;
 	}
 
 	public String getContentXml(WikiPage page) {
@@ -94,7 +118,9 @@ public class WikiMigrationImpl implements WikiMigration {
 
 			String content = display.getFormattedContent();
 
-			System.out.println("FormattedContent=\n>>>>>>>>>>>>\n"+content+"\n<<<<<<<<<<<<<<<<");
+			System.out.println(
+				"FormattedContent=\n>>>>>>>>>>>>\n" + content +
+					"\n<<<<<<<<<<<<<<<<");
 
 			Document document = SAXReaderUtil.createDocument();
 
@@ -103,9 +129,15 @@ public class WikiMigrationImpl implements WikiMigration {
 			rootElement.addAttribute("available-locales", "en_US");
 			rootElement.addAttribute("default-locale", "en_US");
 
-			addElement(rootElement, "format", "list", "keyword", "bgea", "en_US", format);
-			addElement(rootElement, "content", "text_area", "text", "clfy", "en_US", content);
-			addElement(rootElement, "ParentArticle", "ddm-journal-article", "keyword", "dswq", "en_US", "");
+			_addElement(
+				rootElement, "format", "list", "keyword", "bgea", "en_US",
+				format);
+			_addElement(
+				rootElement, "content", "text_area", "text", "clfy", "en_US",
+				content);
+			_addElement(
+				rootElement, "ParentArticle", "ddm-journal-article", "keyword",
+				"dswq", "en_US", "");
 
 			return XMLUtil.formatXML(document.asXML());
 		}
@@ -116,91 +148,102 @@ public class WikiMigrationImpl implements WikiMigration {
 		return null;
 	}
 
-	public JournalArticle convert(WikiPage page) throws Exception {
-		ServiceContext serviceContext = new ServiceContext(); 
-		serviceContext.setScopeGroupId(page.getGroupId());
-		
-		List<FileEntry> attachments = page.getAttachmentsFileEntries();
-		System.out.println("attachments="+attachments.size());
-		
-		for (FileEntry attachment : attachments) {
-			System.out.println("attachment="+attachment.getFileName());
+	@Override
+	public void migrateWikis() {
+		System.out.println("Starting Wiki migration");
+
+		_init();
+
+		for (WikiPage page : _pages) {
+			if (Validator.isNotNull(page.getParentTitle())) {
+				continue;
+			}
+
+			try {
+				if (_resourcePrimKeys.contains(page.getResourcePrimKey())) {
+					convert(page);
+				}
+			}
+			catch (Exception e) {
+				e.printStackTrace();
+			}
 		}
-		
-		String content = getContentXml(page);
-		
-		Locale locale = LocaleUtil.fromLanguageId("en_US");
-		
-		Map<Locale, String> titleMap = new HashMap<Locale, String>();
-		titleMap.put(locale, page.getTitle());
-
-		Map<Locale, String> descriptionMap = new HashMap<Locale, String>();
-		descriptionMap.put(locale, page.getSummary());
-		
-		JournalArticle article = JournalArticleLocalServiceUtil.addArticle(
-			page.getUserId(), page.getGroupId(), 
-			0, titleMap, descriptionMap, content, 
-			growStruct.getStructureKey(), growTemp.getTemplateKey(),
-			serviceContext);
-		
-		/*long id = CounterLocalServiceUtil.increment();
-		
-		ps.setString(1, getContentXml(page));
-		ps.setLong(2, id);
-		ps.executeUpdate();*/
-		
-		// Get childpages and run the main method for them as well
-		
-		List<WikiPage> childPages = page.getChildPages();
-		List<JournalArticle> childArticles = new LinkedList<JournalArticle>();
-
-		for (WikiPage childPage: childPages) {
-			childArticles.add(convert(childPage));
-		}
-		
-		// Create asset links
-		handleChildPages(article, childArticles);
-
-		return article;
 	}
 
-	private void addElement(Element rootElement, String name, String type, 
-		String indexType, String instanceId, String languageId, 
-		String content) {
-		
-		Element dynamicElementElement = rootElement.addElement("dynamic-element");
+	private void _addElement(
+		Element rootElement, String name, String type, String indexType,
+		String instanceId, String languageId, String content) {
+
+		Element dynamicElementElement = rootElement.addElement(
+			"dynamic-element");
+
 		dynamicElementElement.addAttribute("name", name);
 		dynamicElementElement.addAttribute("type", type);
 		dynamicElementElement.addAttribute("index-type", indexType);
 		dynamicElementElement.addAttribute("instance-id", instanceId);
 
-		Element dynamicContentElement = dynamicElementElement.addElement("dynamic-content");
+		Element dynamicContentElement = dynamicElementElement.addElement(
+			"dynamic-content");
+
 		dynamicContentElement.addAttribute("language-id", languageId);
-		dynamicContentElement.addCDATA(content);		
+		dynamicContentElement.addCDATA(content);
 	}
 
-	private void handleChildPages(
-		JournalArticle article, List<JournalArticle> childArticles) 
-			throws PortalException {
+	private void _handleChildPages(
+			JournalArticle article, List<JournalArticle> childArticles)
+		throws PortalException {
 
 		AssetEntry assetEntry = AssetEntryLocalServiceUtil.getEntry(
 			JournalArticle.class.getName(), article.getResourcePrimKey());
 
-		for (JournalArticle childArticle: childArticles) {
+		for (JournalArticle childArticle : childArticles) {
 			AssetEntry childAssetEntry = AssetEntryLocalServiceUtil.getEntry(
 				JournalArticle.class.getName(),
 				childArticle.getResourcePrimKey());
 
-			AssetLinkLocalServiceUtil.addLink(assetEntry.getUserId(),
-				assetEntry.getEntryId(), childAssetEntry.getEntryId(),
-				AssetLinkConstants.TYPE_RELATED, 0);
+			AssetLinkLocalServiceUtil.addLink(
+				assetEntry.getUserId(), assetEntry.getEntryId(),
+				childAssetEntry.getEntryId(), AssetLinkConstants.TYPE_RELATED,
+				0);
 		}
 	}
 
-	private Set<Long> resourcePrimKeys;
-	private DDMTemplate growTemp;
-	private DDMStructure growStruct;
-	private List<WikiPage> pages;
-	private List<FileEntry> pageAttachments = new LinkedList<FileEntry>();
-	private List<FileEntry> contentImages = new LinkedList<FileEntry>();
+	private void _init() {
+		Collections.addAll(_resourcePrimKeys, 1499375L);
+
+		List<DDMStructure> structs =
+			DDMStructureLocalServiceUtil.getStructures();
+
+		for (DDMStructure struct : structs) {
+			String structName = struct.getNameCurrentValue();
+
+			if (structName.contentEquals("GROW Article")) {
+				_growStruct = struct;
+
+				break;
+			}
+		}
+
+		List<DDMTemplate> growTemplates = _growStruct.getTemplates();
+
+		_growTemp = growTemplates.get(0);
+
+		System.out.println(
+			"-- Found structure: \"" + _growStruct.getNameCurrentValue() +
+				"\"");
+		System.out.println(
+			"-- Found template: \"" + _growTemp.getNameCurrentValue() + "\"");
+
+		_pages = WikiPageLocalServiceUtil.getPages("creole");
+
+		System.out.println("n=" + _pages.size());
+	}
+
+	private List<FileEntry> _contentImages = new LinkedList<>();
+	private DDMStructure _growStruct;
+	private DDMTemplate _growTemp;
+	private List<FileEntry> _pageAttachments = new LinkedList<>();
+	private List<WikiPage> _pages;
+	private Set<Long> _resourcePrimKeys;
+
 }
