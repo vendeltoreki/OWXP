@@ -18,6 +18,7 @@ import com.liferay.asset.kernel.model.AssetEntry;
 import com.liferay.asset.kernel.model.AssetLinkConstants;
 import com.liferay.asset.kernel.service.AssetEntryLocalServiceUtil;
 import com.liferay.asset.kernel.service.AssetLinkLocalServiceUtil;
+import com.liferay.dynamic.data.mapping.exception.NoSuchStructureException;
 import com.liferay.dynamic.data.mapping.model.DDMStructure;
 import com.liferay.dynamic.data.mapping.model.DDMTemplate;
 import com.liferay.dynamic.data.mapping.service.DDMStructureLocalServiceUtil;
@@ -39,6 +40,7 @@ import com.liferay.wiki.service.WikiPageLocalServiceUtil;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
@@ -149,7 +151,7 @@ public class WikiMigrationImpl implements WikiMigration {
 	}
 
 	@Override
-	public void migrateWikis() {
+	public void migrateWikis() throws Exception {
 		System.out.println("Starting Wiki migration");
 
 		_init();
@@ -230,7 +232,9 @@ public class WikiMigrationImpl implements WikiMigration {
 		}
 	}
 
-	private void _init() {
+	private void _init() throws Exception {
+		System.out.println("Initializing.");
+
 		Collections.addAll(_resourcePrimKeys, 1499375L);
 
 		List<DDMStructure> structs =
@@ -242,19 +246,27 @@ public class WikiMigrationImpl implements WikiMigration {
 			if (structName.contentEquals("GROW Article")) {
 				_growStruct = struct;
 
+				System.out.println(
+					"-- Found structure: \"" + _growStruct.getNameCurrentValue() +
+						"\"");
+
 				break;
 			}
 		}
 
+		if(Validator.isNull(_growStruct)) {
+			throw new NoSuchStructureException();
+		}
+
 		List<DDMTemplate> growTemplates = _growStruct.getTemplates();
 
-		_growTemp = growTemplates.get(0);
+		if (!growTemplates.isEmpty()) {
+			_growTemp = growTemplates.get(0);
 
-		System.out.println(
-			"-- Found structure: \"" + _growStruct.getNameCurrentValue() +
-				"\"");
-		System.out.println(
-			"-- Found template: \"" + _growTemp.getNameCurrentValue() + "\"");
+			System.out.println(
+				"-- Found template: \"" + _growTemp.getNameCurrentValue() +
+					"\"");
+		}
 
 		_pages = WikiPageLocalServiceUtil.getPages("creole");
 
@@ -264,6 +276,6 @@ public class WikiMigrationImpl implements WikiMigration {
 	private DDMStructure _growStruct;
 	private DDMTemplate _growTemp;
 	private List<WikiPage> _pages;
-	private Set<Long> _resourcePrimKeys;
+	private Set<Long> _resourcePrimKeys = new HashSet<Long>();
 
 }
