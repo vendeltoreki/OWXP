@@ -14,6 +14,8 @@
 
 package com.liferay.grow.wiki.migration;
 
+import com.liferay.dynamic.data.mapping.exception.NoSuchStructureException;
+
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
@@ -30,7 +32,16 @@ import org.osgi.service.component.annotations.Reference;
 public class WikiMigrationCommand {
 
 	public void executeMigration() {
-		_wikiMigration.migrateWikis();
+		try {
+			_wikiMigration.migrateWikis();
+		}
+		catch (Exception e) {
+			if (e instanceof NoSuchStructureException) {
+				System.out.println("No GROW structure found");
+			}
+
+			e.printStackTrace();
+		}
 	}
 
 	@Reference
