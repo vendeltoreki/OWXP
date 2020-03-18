@@ -16,8 +16,10 @@ package com.liferay.grow.wiki.migration;
 
 import com.liferay.asset.kernel.model.AssetEntry;
 import com.liferay.asset.kernel.model.AssetLinkConstants;
+import com.liferay.asset.kernel.model.AssetTag;
 import com.liferay.asset.kernel.service.AssetEntryLocalServiceUtil;
 import com.liferay.asset.kernel.service.AssetLinkLocalServiceUtil;
+import com.liferay.asset.kernel.service.AssetTagLocalServiceUtil;
 import com.liferay.dynamic.data.mapping.exception.NoSuchStructureException;
 import com.liferay.dynamic.data.mapping.model.DDMStructure;
 import com.liferay.dynamic.data.mapping.model.DDMTemplate;
@@ -91,6 +93,10 @@ public class WikiMigrationImpl implements WikiMigration {
 		ps.setString(1, getContentXml(page));
 		ps.setLong(2, id);
 		ps.executeUpdate();*/
+
+		// Asset tags
+
+		_handleAssetTags(page, article);
 
 		// Get childpages and run the main method for them as well
 
@@ -189,6 +195,22 @@ public class WikiMigrationImpl implements WikiMigration {
 
 		dynamicContentElement.addAttribute("language-id", languageId);
 		dynamicContentElement.addCDATA(content);
+	}
+
+	private void _handleAssetTags(WikiPage page, JournalArticle article)
+		throws PortalException {
+
+		AssetEntry wikiAssetEntry = AssetEntryLocalServiceUtil.getEntry(
+			"com.liferay.wiki.model.WikiPage", page.getPrimaryKey());
+
+		List<AssetTag> tags = wikiAssetEntry.getTags();
+
+		AssetEntry journalAssetEntry = AssetEntryLocalServiceUtil.getEntry(
+			"com.liferay.journal.model.JournalArticle",
+			article.getPrimaryKey());
+
+		AssetTagLocalServiceUtil.addAssetEntryAssetTags(
+			journalAssetEntry.getEntryId(), tags);
 	}
 
 	private void _handleAttachments(
