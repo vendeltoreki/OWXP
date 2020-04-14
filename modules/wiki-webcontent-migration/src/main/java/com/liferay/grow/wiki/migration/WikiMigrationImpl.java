@@ -27,11 +27,17 @@ import com.liferay.dynamic.data.mapping.service.DDMStructureLocalServiceUtil;
 import com.liferay.journal.model.JournalArticle;
 import com.liferay.journal.service.JournalArticleLocalServiceUtil;
 import com.liferay.petra.xml.XMLUtil;
+import com.liferay.portal.kernel.dao.jdbc.DataAccess;
+import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
+import com.liferay.portal.kernel.dao.orm.DynamicQuery;
+import com.liferay.portal.kernel.dao.orm.OrderFactoryUtil;
+import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringBundler;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.xml.Document;
 import com.liferay.portal.kernel.xml.Element;
@@ -40,10 +46,14 @@ import com.liferay.wiki.model.WikiPage;
 import com.liferay.wiki.model.WikiPageDisplay;
 import com.liferay.wiki.service.WikiPageLocalServiceUtil;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.Timestamp;
+
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -58,20 +68,37 @@ import org.osgi.service.component.annotations.Component;
 @Component(service = WikiMigration.class)
 public class WikiMigrationImpl implements WikiMigration {
 
-	public JournalArticle convert(WikiPage page) throws Exception {
+	@Override
+	public void migrateWikiPage(long wikiPageResourcePrimKey) throws Exception {
+		System.out.println(
+			"Starting single Wiki page migration: " + wikiPageResourcePrimKey);
+
+		_init();
+
+		_executeMigrationByResourcePrimKey(wikiPageResourcePrimKey);
+
+		_postProcessChildPages();
+	}
+
+	@Override
+	public void migrateWikis() throws Exception {
+		System.out.println("Starting Wiki migration");
+
+		_init();
+
+		_executeMigrationByResourcePrimKeys(null);
+
+		_postProcessChildPages();
+	}
+
+	private JournalArticle _addArticle(
+		WikiPage page, String structKey, String tempKey) {
+
 		ServiceContext serviceContext = new ServiceContext();
 
 		serviceContext.setScopeGroupId(page.getGroupId());
 
-		List<FileEntry> attachments = page.getAttachmentsFileEntries();
-
-		System.out.println("attachments=" + attachments.size());
-
-		for (FileEntry attachment : attachments) {
-			System.out.println("attachment=" + attachment.getFileName());
-		}
-
-		String content = getContentXml(page);
+		String content = _getContentXml(page);
 
 		Locale locale = LocaleUtil.fromLanguageId("en_US");
 
@@ -83,38 +110,117 @@ public class WikiMigrationImpl implements WikiMigration {
 
 		descriptionMap.put(locale, page.getSummary());
 
-		JournalArticle article = JournalArticleLocalServiceUtil.addArticle(
-			page.getUserId(), page.getGroupId(), 0, titleMap, descriptionMap,
-			content, _growStruct.getStructureKey(), _growTemp.getTemplateKey(),
-			serviceContext);
+		try {
+			JournalArticle article = JournalArticleLocalServiceUtil.addArticle(
+				page.getUserId(), page.getGroupId(), 0, titleMap,
+				descriptionMap, content, structKey, tempKey, serviceContext);
 
-		/*long id = CounterLocalServiceUtil.increment();
+			_updateTimestamp(article, page);
 
-		ps.setString(1, getContentXml(page));
-		ps.setLong(2, id);
-		ps.executeUpdate();*/
+			if (page.isHead()) {
+				_handleHeadVersion(page, article);
+			}
 
-		// Asset tags
-
-		_handleAssetTags(page, article);
-
-		// Get childpages and run the main method for them as well
-
-		List<WikiPage> childPages = page.getChildPages();
-		List<JournalArticle> childArticles = new LinkedList<>();
-
-		for (WikiPage childPage : childPages) {
-			childArticles.add(convert(childPage));
+			return article;
+		}
+		catch (Exception e) {
+			System.err.println("ERROR in addArticle");
+			e.printStackTrace();
 		}
 
-		// Create asset links
-
-		_handleChildPages(article, childArticles);
-
-		return article;
+		return null;
 	}
 
-	public String getContentXml(WikiPage page) {
+	private void _addElement(
+		Element rootElement, String name, String type, String indexType,
+		String instanceId, String languageId, String content) {
+
+		Element dynamicElementElement = rootElement.addElement(
+			"dynamic-element");
+
+		dynamicElementElement.addAttribute("name", name);
+		dynamicElementElement.addAttribute("type", type);
+		dynamicElementElement.addAttribute("index-type", indexType);
+		dynamicElementElement.addAttribute("instance-id", instanceId);
+
+		Element dynamicContentElement = dynamicElementElement.addElement(
+			"dynamic-content");
+
+		dynamicContentElement.addAttribute("language-id", languageId);
+		dynamicContentElement.addCDATA(content);
+	}
+
+	private void _executeMigrationByResourcePrimKey(long resourcePrimKey)
+		throws Exception {
+
+		Set<Long> resourcePrimKeys = new HashSet<>();
+
+		resourcePrimKeys.add(resourcePrimKey);
+
+		_executeMigrationByResourcePrimKeys(resourcePrimKeys);
+	}
+
+	private void _executeMigrationByResourcePrimKeys(Set<Long> resourcePrimKeys)
+		throws Exception {
+
+		ActionableDynamicQuery adq =
+			WikiPageLocalServiceUtil.getActionableDynamicQuery();
+
+		if ((resourcePrimKeys != null) && !resourcePrimKeys.isEmpty()) {
+			adq.setAddCriteriaMethod(
+				new ActionableDynamicQuery.AddCriteriaMethod() {
+
+					@Override
+					public void addCriteria(DynamicQuery dynamicQuery) {
+						dynamicQuery.add(
+							RestrictionsFactoryUtil.in(
+								"resourcePrimKey", resourcePrimKeys));
+					}
+
+				});
+		}
+
+		adq.setAddOrderCriteriaMethod(
+			new ActionableDynamicQuery.AddOrderCriteriaMethod() {
+
+				@Override
+				public void addOrderCriteria(DynamicQuery dynamicQuery) {
+					dynamicQuery.addOrder(OrderFactoryUtil.asc("statusDate"));
+				}
+
+			});
+
+		adq.setPerformActionMethod(
+			new ActionableDynamicQuery.PerformActionMethod<WikiPage>() {
+
+				@Override
+				public void performAction(WikiPage page) {
+					System.out.println(
+						"--Page found: version=" + page.getVersion());
+
+					if (!_keysMap.containsKey(page.getResourcePrimKey())) {
+						JournalArticle article = _addArticle(
+							page, _growStruct.getStructureKey(),
+							_growTemp.getTemplateKey());
+
+						if (article != null) {
+							_keysMap.put(
+								page.getResourcePrimKey(),
+								article.getResourcePrimKey());
+						}
+					}
+					else {
+						_updateArticle(
+							_keysMap.get(page.getResourcePrimKey()), page);
+					}
+				}
+
+			});
+
+		adq.performActions();
+	}
+
+	private String _getContentXml(WikiPage page) {
 		try {
 			String format = page.getFormat();
 
@@ -139,11 +245,11 @@ public class WikiMigrationImpl implements WikiMigration {
 			rootElement.addAttribute("default-locale", "en_US");
 
 			_addElement(
-				rootElement, "format", "list", "keyword", "bgea", "en_US",
-				format);
+				rootElement, "format", "list", "keyword", StringUtil.randomId(),
+				"en_US", format);
 			_addElement(
-				rootElement, "content", "text_area", "text", "clfy", "en_US",
-				content);
+				rootElement, "content", "text_area", "text",
+				StringUtil.randomId(), "en_US", content);
 
 			_handleAttachments(rootElement, page.getAttachmentsFileEntries());
 
@@ -156,58 +262,16 @@ public class WikiMigrationImpl implements WikiMigration {
 		return null;
 	}
 
-	@Override
-	public void migrateWikis() throws Exception {
-		System.out.println("Starting Wiki migration");
-
-		_init();
-
-		for (WikiPage page : _pages) {
-			if (Validator.isNotNull(page.getParentTitle())) {
-				continue;
-			}
-
-			try {
-				if (_resourcePrimKeys.contains(page.getResourcePrimKey())) {
-					convert(page);
-				}
-			}
-			catch (Exception e) {
-				e.printStackTrace();
-			}
-		}
-	}
-
-	private void _addElement(
-		Element rootElement, String name, String type, String indexType,
-		String instanceId, String languageId, String content) {
-
-		Element dynamicElementElement = rootElement.addElement(
-			"dynamic-element");
-
-		dynamicElementElement.addAttribute("name", name);
-		dynamicElementElement.addAttribute("type", type);
-		dynamicElementElement.addAttribute("index-type", indexType);
-		dynamicElementElement.addAttribute("instance-id", instanceId);
-
-		Element dynamicContentElement = dynamicElementElement.addElement(
-			"dynamic-content");
-
-		dynamicContentElement.addAttribute("language-id", languageId);
-		dynamicContentElement.addCDATA(content);
-	}
-
 	private void _handleAssetTags(WikiPage page, JournalArticle article)
 		throws PortalException {
 
 		AssetEntry wikiAssetEntry = AssetEntryLocalServiceUtil.getEntry(
-			"com.liferay.wiki.model.WikiPage", page.getPrimaryKey());
+			WikiPage.class.getName(), page.getResourcePrimKey());
 
 		List<AssetTag> tags = wikiAssetEntry.getTags();
 
 		AssetEntry journalAssetEntry = AssetEntryLocalServiceUtil.getEntry(
-			"com.liferay.journal.model.JournalArticle",
-			article.getPrimaryKey());
+			JournalArticle.class.getName(), article.getResourcePrimKey());
 
 		AssetTagLocalServiceUtil.addAssetEntryAssetTags(
 			journalAssetEntry.getEntryId(), tags);
@@ -216,7 +280,7 @@ public class WikiMigrationImpl implements WikiMigration {
 	private void _handleAttachments(
 		Element rootElement, List<FileEntry> attachments) {
 
-		for(FileEntry attachment: attachments) {
+		for (FileEntry attachment : attachments) {
 			StringBundler sb = new StringBundler();
 
 			sb.append("{\"classPK\":");
@@ -231,27 +295,28 @@ public class WikiMigrationImpl implements WikiMigration {
 
 			_addElement(
 				rootElement, "attachments", "document_library", "keyword",
-				"trnm", "en_US", sb.toString());
+				StringUtil.randomId(), "en_US", sb.toString());
 		}
 	}
 
-	private void _handleChildPages(
-			JournalArticle article, List<JournalArticle> childArticles)
+	private void _handleHeadVersion(WikiPage page, JournalArticle article)
 		throws PortalException {
 
-		AssetEntry assetEntry = AssetEntryLocalServiceUtil.getEntry(
-			JournalArticle.class.getName(), article.getResourcePrimKey());
+		try {
+			WikiPage parentPage = page.getParentPage();
 
-		for (JournalArticle childArticle : childArticles) {
-			AssetEntry childAssetEntry = AssetEntryLocalServiceUtil.getEntry(
-				JournalArticle.class.getName(),
-				childArticle.getResourcePrimKey());
+			if (parentPage != null) {
+				long parentResourcePrimKey = parentPage.getResourcePrimKey();
 
-			AssetLinkLocalServiceUtil.addLink(
-				assetEntry.getUserId(), assetEntry.getEntryId(),
-				childAssetEntry.getEntryId(), AssetLinkConstants.TYPE_RELATED,
-				0);
+				_parentsMap.put(
+					page.getResourcePrimKey(), parentResourcePrimKey);
+			}
 		}
+		catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		_handleAssetTags(page, article);
 	}
 
 	private void _init() throws Exception {
@@ -269,14 +334,14 @@ public class WikiMigrationImpl implements WikiMigration {
 				_growStruct = struct;
 
 				System.out.println(
-					"-- Found structure: \"" + _growStruct.getNameCurrentValue() +
-						"\"");
+					"-- Found structure: \"" +
+						_growStruct.getNameCurrentValue() + "\"");
 
 				break;
 			}
 		}
 
-		if(Validator.isNull(_growStruct)) {
+		if (Validator.isNull(_growStruct)) {
 			throw new NoSuchStructureException();
 		}
 
@@ -290,14 +355,110 @@ public class WikiMigrationImpl implements WikiMigration {
 					"\"");
 		}
 
-		_pages = WikiPageLocalServiceUtil.getPages("creole");
+		_keysMap.clear();
+	}
 
-		System.out.println("n=" + _pages.size());
+	private void _postProcessChildPages() throws PortalException {
+		for (Map.Entry<Long, Long> entry : _parentsMap.entrySet()) {
+			long childResourcePrimKey = entry.getKey();
+
+			long childArticleId = _keysMap.get(childResourcePrimKey);
+
+			AssetEntry childAssetEntry = AssetEntryLocalServiceUtil.getEntry(
+				JournalArticle.class.getName(), childArticleId);
+
+			long parentResourcePrimKey = entry.getValue();
+
+			long parentArticleId = _keysMap.get(parentResourcePrimKey);
+
+			AssetEntry parentAssetEntry = AssetEntryLocalServiceUtil.getEntry(
+				JournalArticle.class.getName(), parentArticleId);
+
+			AssetLinkLocalServiceUtil.addLink(
+				parentAssetEntry.getUserId(), parentAssetEntry.getEntryId(),
+				childAssetEntry.getEntryId(), AssetLinkConstants.TYPE_RELATED,
+				0);
+		}
+	}
+
+	private JournalArticle _updateArticle(
+		long articleResourcePrimKey, WikiPage page) {
+
+		try {
+			JournalArticle article =
+				JournalArticleLocalServiceUtil.getLatestArticle(
+					articleResourcePrimKey);
+
+			String content = _getContentXml(page);
+
+			article.setContent(content);
+
+			Locale locale = LocaleUtil.fromLanguageId("en_US");
+
+			ServiceContext serviceContext = new ServiceContext();
+
+			serviceContext.setScopeGroupId(page.getGroupId());
+
+			Map<Locale, String> titleMap = article.getTitleMap();
+			Map<Locale, String> descriptionMap = article.getDescriptionMap();
+
+			titleMap.put(locale, page.getTitle());
+			descriptionMap.put(locale, page.getSummary());
+
+			article = JournalArticleLocalServiceUtil.updateArticle(
+				page.getUserId(), article.getGroupId(), article.getFolderId(),
+				article.getArticleId(), article.getVersion(), titleMap,
+				descriptionMap, content, null, serviceContext);
+
+			System.out.println(
+				"Article updated: id=" + article.getId() + ", version=" +
+					article.getVersion());
+
+			_updateTimestamp(article, page);
+
+			if (page.isHead()) {
+				_handleHeadVersion(page, article);
+			}
+
+			return article;
+		}
+		catch (Exception e) {
+			System.err.println("ERROR in updateArticle");
+			e.printStackTrace();
+		}
+
+		return null;
+	}
+
+	private void _updateTimestamp(JournalArticle article, WikiPage page) {
+		System.out.println(
+			"Updating timestamp: id=" + article.getId() + ", statusDate=" +
+				page.getStatusDate());
+
+		try {
+			Connection connection = DataAccess.getConnection();
+
+			PreparedStatement ps = connection.prepareStatement(
+				"update JournalArticle set statusDate=? where id_ = ?");
+
+			Date statusDate = page.getStatusDate();
+
+			ps.setTimestamp(1, new Timestamp(statusDate.getTime()));
+
+			ps.setLong(2, article.getId());
+
+			ps.executeUpdate();
+		}
+		catch (Exception e) {
+			System.err.println("ERROR in updateTimestamp");
+			e.printStackTrace();
+		}
 	}
 
 	private DDMStructure _growStruct;
 	private DDMTemplate _growTemp;
-	private List<WikiPage> _pages;
-	private Set<Long> _resourcePrimKeys = new HashSet<Long>();
+	private Map<Long, Long> _keysMap = new HashMap<>();
+	private Map<Long, Long> _parentsMap = new HashMap<>();
+	private Set<Long> _resourcePrimKeys = new HashSet<>();
 
 }
