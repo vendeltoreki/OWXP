@@ -20,6 +20,8 @@ package com.liferay.grow.wiki.migration;
  */
 public interface WikiMigration {
 
+	public void migrateWikiPage(long wikiPageResourcePrimKey) throws Exception;
+
 	public void migrateWikis() throws Exception;
 
 }

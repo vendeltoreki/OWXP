@@ -44,6 +44,19 @@ public class WikiMigrationCommand {
 		}
 	}
 
+	public void executeMigration(long wikiPageResourcePrimKey) {
+		try {
+			_wikiMigration.migrateWikiPage(wikiPageResourcePrimKey);
+		}
+		catch (Exception e) {
+			if (e instanceof NoSuchStructureException) {
+				System.out.println("No GROW structure found");
+			}
+
+			e.printStackTrace();
+		}
+	}
+
 	@Reference
 	private WikiMigration _wikiMigration;
 
