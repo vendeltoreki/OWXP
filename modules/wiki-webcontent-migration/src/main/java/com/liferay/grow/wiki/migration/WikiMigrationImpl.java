@@ -42,6 +42,9 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.xml.Document;
 import com.liferay.portal.kernel.xml.Element;
 import com.liferay.portal.kernel.xml.SAXReaderUtil;
+import com.liferay.ratings.kernel.exception.NoSuchStatsException;
+import com.liferay.ratings.kernel.model.RatingsEntry;
+import com.liferay.ratings.kernel.service.RatingsEntryLocalServiceUtil;
 import com.liferay.wiki.model.WikiPage;
 import com.liferay.wiki.model.WikiPageDisplay;
 import com.liferay.wiki.service.WikiPageLocalServiceUtil;
@@ -317,6 +320,35 @@ public class WikiMigrationImpl implements WikiMigration {
 		}
 
 		_handleAssetTags(page, article);
+
+		_handleRatings(page, article);
+	}
+
+	private void _handleRatings(WikiPage page, JournalArticle article)
+		throws PortalException {
+
+		ServiceContext serviceContext = new ServiceContext();
+
+		serviceContext.setScopeGroupId(page.getGroupId());
+
+		try {
+			List<RatingsEntry> ratingsEntriesWiki =
+				RatingsEntryLocalServiceUtil.getEntries(
+					WikiPage.class.getName(), page.getResourcePrimKey());
+
+			for (RatingsEntry ratingsEntry : ratingsEntriesWiki) {
+				ratingsEntry.setClassName(JournalArticle.class.getName());
+				ratingsEntry.setClassPK(article.getResourcePrimKey());
+
+				RatingsEntryLocalServiceUtil.updateEntry(
+					ratingsEntry.getUserId(), JournalArticle.class.getName(),
+					article.getResourcePrimKey(), ratingsEntry.getScore(),
+					serviceContext);
+			}
+		}
+		catch (NoSuchStatsException nsse) {
+			System.out.println("-- No likes for this page");
+		}
 	}
 
 	private void _init() throws Exception {
