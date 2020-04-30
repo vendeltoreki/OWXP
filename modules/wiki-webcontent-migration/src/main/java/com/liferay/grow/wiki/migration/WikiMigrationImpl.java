@@ -38,7 +38,6 @@ import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringBundler;
 import com.liferay.portal.kernel.util.StringUtil;
-import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.xml.Document;
 import com.liferay.portal.kernel.xml.Element;
 import com.liferay.portal.kernel.xml.SAXReaderUtil;
@@ -373,7 +372,7 @@ public class WikiMigrationImpl implements WikiMigration {
 			}
 		}
 
-		if (Validator.isNull(_growStruct)) {
+		if (_growStruct == null) {
 			throw new NoSuchStructureException();
 		}
 
