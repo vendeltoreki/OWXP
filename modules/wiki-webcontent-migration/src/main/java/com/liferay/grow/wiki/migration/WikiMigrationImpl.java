@@ -14,12 +14,17 @@
 
 package com.liferay.grow.wiki.migration;
 
+import com.liferay.asset.kernel.exception.NoSuchVocabularyException;
+import com.liferay.asset.kernel.model.AssetCategory;
 import com.liferay.asset.kernel.model.AssetEntry;
 import com.liferay.asset.kernel.model.AssetLinkConstants;
 import com.liferay.asset.kernel.model.AssetTag;
+import com.liferay.asset.kernel.model.AssetVocabulary;
+import com.liferay.asset.kernel.service.AssetCategoryLocalServiceUtil;
 import com.liferay.asset.kernel.service.AssetEntryLocalServiceUtil;
 import com.liferay.asset.kernel.service.AssetLinkLocalServiceUtil;
 import com.liferay.asset.kernel.service.AssetTagLocalServiceUtil;
+import com.liferay.asset.kernel.service.AssetVocabularyLocalServiceUtil;
 import com.liferay.dynamic.data.mapping.exception.NoSuchStructureException;
 import com.liferay.dynamic.data.mapping.model.DDMStructure;
 import com.liferay.dynamic.data.mapping.model.DDMTemplate;
@@ -31,6 +36,7 @@ import com.liferay.portal.kernel.dao.jdbc.DataAccess;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.dao.orm.OrderFactoryUtil;
+import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.repository.model.FileEntry;
@@ -38,6 +44,7 @@ import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringBundler;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.xml.Document;
 import com.liferay.portal.kernel.xml.Element;
 import com.liferay.portal.kernel.xml.SAXReaderUtil;
@@ -264,6 +271,80 @@ public class WikiMigrationImpl implements WikiMigration {
 		return null;
 	}
 
+	private AssetVocabulary _getVocabularyByName(String vocabularyName)
+		throws NoSuchVocabularyException {
+
+		AssetVocabulary growVocabulary = null;
+
+		List<AssetVocabulary> vocs =
+			AssetVocabularyLocalServiceUtil.getAssetVocabularies(
+				QueryUtil.ALL_POS, QueryUtil.ALL_POS);
+
+		for (AssetVocabulary voc : vocs) {
+			String vocName = voc.getName();
+
+			if (vocName.contentEquals(vocabularyName)) {
+				growVocabulary = voc;
+
+				System.out.println(
+					"-- Found Vocabulary: \"" + growVocabulary.getName() +
+						"\"");
+
+				break;
+			}
+		}
+
+		if (growVocabulary == null) {
+			throw new NoSuchVocabularyException();
+		}
+
+		return growVocabulary;
+	}
+
+	private String _getWikiPageCategoryName(WikiPage wikiPage)
+		throws PortalException {
+
+		String parentTitle = wikiPage.getTitle();
+
+		if (!parentTitle.equals("Learn") && !parentTitle.equals("Share") &&
+			!parentTitle.equals("People") &&
+			!parentTitle.equals("Excellence")) {
+
+			parentTitle = wikiPage.getParentTitle();
+
+			while (Validator.isNotNull(parentTitle) &&
+				   !parentTitle.equals("Learn") &&
+				   !parentTitle.equals("Share") &&
+				   !parentTitle.equals("People") &&
+				   !parentTitle.equals("Excellence")) {
+
+				wikiPage = wikiPage.getParentPage();
+
+				parentTitle = wikiPage.getParentTitle();
+			}
+		}
+
+		if (!parentTitle.equals("Excellence") && !parentTitle.equals("Learn") &&
+			!parentTitle.equals("Share") && !parentTitle.equals("People")) {
+
+			parentTitle = "Share";
+		}
+
+		return parentTitle;
+	}
+
+	private void _handleAssetCategory(WikiPage wikiPage, JournalArticle article)
+		throws PortalException {
+
+		AssetEntry journalAssetEntry = AssetEntryLocalServiceUtil.getEntry(
+			JournalArticle.class.getName(), article.getResourcePrimKey());
+
+		String categoryName = _getWikiPageCategoryName(wikiPage);
+
+		AssetCategoryLocalServiceUtil.addAssetEntryAssetCategory(
+			journalAssetEntry.getEntryId(), _categoriesMap.get(categoryName));
+	}
+
 	private void _handleAssetTags(WikiPage page, JournalArticle article)
 		throws PortalException {
 
@@ -317,6 +398,8 @@ public class WikiMigrationImpl implements WikiMigration {
 		catch (Exception e) {
 			e.printStackTrace();
 		}
+
+		_handleAssetCategory(page, article);
 
 		_handleAssetTags(page, article);
 
@@ -386,7 +469,24 @@ public class WikiMigrationImpl implements WikiMigration {
 					"\"");
 		}
 
+		_initCategories();
+
 		_keysMap.clear();
+	}
+
+	private void _initCategories() throws Exception {
+		String vocabularyName = "GROW Category";
+
+		AssetVocabulary growVocabulary = _getVocabularyByName(vocabularyName);
+
+		List<AssetCategory> cats =
+			AssetCategoryLocalServiceUtil.getVocabularyCategories(
+				growVocabulary.getVocabularyId(), QueryUtil.ALL_POS,
+				QueryUtil.ALL_POS, null);
+
+		for (AssetCategory cat : cats) {
+			_categoriesMap.put(cat.getName(), cat.getCategoryId());
+		}
 	}
 
 	private void _postProcessChildPages() throws PortalException {
@@ -486,6 +586,7 @@ public class WikiMigrationImpl implements WikiMigration {
 		}
 	}
 
+	private Map<String, Long> _categoriesMap = new HashMap<>();
 	private DDMStructure _growStruct;
 	private DDMTemplate _growTemp;
 	private Map<Long, Long> _keysMap = new HashMap<>();
