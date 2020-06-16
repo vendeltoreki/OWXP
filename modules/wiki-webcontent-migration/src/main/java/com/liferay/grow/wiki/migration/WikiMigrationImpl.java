@@ -38,6 +38,8 @@ import com.liferay.portal.kernel.dao.orm.OrderFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.service.ClassNameLocalServiceUtil;
@@ -82,8 +84,11 @@ public class WikiMigrationImpl implements WikiMigration {
 
 	@Override
 	public void migrateWikiPage(long wikiPageResourcePrimKey) throws Exception {
-		System.out.println(
-			"Starting single Wiki page migration: " + wikiPageResourcePrimKey);
+		if (_log.isInfoEnabled()) {
+			_log.info(
+				"Starting single Wiki page migration: " +
+					wikiPageResourcePrimKey);
+		}
 
 		_init();
 
@@ -94,7 +99,9 @@ public class WikiMigrationImpl implements WikiMigration {
 
 	@Override
 	public void migrateWikis() throws Exception {
-		System.out.println("Starting Wiki migration");
+		if (_log.isInfoEnabled()) {
+			_log.info("Starting Wiki migration");
+		}
 
 		_init();
 
@@ -136,8 +143,9 @@ public class WikiMigrationImpl implements WikiMigration {
 			return article;
 		}
 		catch (Exception e) {
-			System.err.println("ERROR in addArticle");
-			e.printStackTrace();
+			if (_log.isWarnEnabled()) {
+				_log.warn("ERROR in addArticle", e);
+			}
 		}
 
 		return null;
@@ -244,8 +252,10 @@ public class WikiMigrationImpl implements WikiMigration {
 
 				@Override
 				public void performAction(WikiPage page) {
-					System.out.println(
-						"--Page found: version=" + page.getVersion());
+					if (_log.isDebugEnabled()) {
+						_log.debug(
+							"--Page found: version=" + page.getVersion());
+					}
 
 					if (!_keysMap.containsKey(page.getResourcePrimKey())) {
 						JournalArticle article = _addArticle(
@@ -290,9 +300,11 @@ public class WikiMigrationImpl implements WikiMigration {
 				content = display.getFormattedContent();
 			}
 
-			System.out.println(
-				"FormattedContent=\n>>>>>>>>>>>>\n" + content +
-					"\n<<<<<<<<<<<<<<<<");
+			if (_log.isDebugEnabled()) {
+				_log.debug(
+					"FormattedContent=\n>>>>>>>>>>>>\n" + content +
+						"\n<<<<<<<<<<<<<<<<");
+			}
 
 			Document document = SAXReaderUtil.createDocument();
 
@@ -313,7 +325,9 @@ public class WikiMigrationImpl implements WikiMigration {
 			return XMLUtil.formatXML(document.asXML());
 		}
 		catch (Exception e) {
-			e.printStackTrace();
+			if (_log.isWarnEnabled()) {
+				_log.warn("ERROR in _getContentXml", e);
+			}
 		}
 
 		return null;
@@ -332,9 +346,11 @@ public class WikiMigrationImpl implements WikiMigration {
 			if (vocName.equals(vocabularyName)) {
 				growVocabulary = voc;
 
-				System.out.println(
-					"-- Found Vocabulary: \"" + growVocabulary.getName() +
-						"\"");
+				if (_log.isInfoEnabled()) {
+					_log.info(
+						"-- Found Vocabulary: \"" + growVocabulary.getName() +
+							"\"");
+				}
 
 				break;
 			}
@@ -438,7 +454,9 @@ public class WikiMigrationImpl implements WikiMigration {
 			}
 		}
 		catch (Exception e) {
-			e.printStackTrace();
+			if (_log.isWarnEnabled()) {
+				_log.warn("ERROR in _handleHeadVersion", e);
+			}
 		}
 
 		_handleAssetCategory(page, article);
@@ -471,12 +489,16 @@ public class WikiMigrationImpl implements WikiMigration {
 			}
 		}
 		catch (NoSuchStatsException nsse) {
-			System.out.println("-- No likes for this page");
+			if (_log.isDebugEnabled()) {
+				_log.debug("-- No likes for this page");
+			}
 		}
 	}
 
 	private void _init() throws Exception {
-		System.out.println("Initializing.");
+		if (_log.isInfoEnabled()) {
+			_log.info("Initializing");
+		}
 
 		_initGroup();
 
@@ -489,9 +511,11 @@ public class WikiMigrationImpl implements WikiMigration {
 			if (structName.equals("GROW Article")) {
 				_growStruct = struct;
 
-				System.out.println(
-					"-- Found structure: \"" +
-						_growStruct.getNameCurrentValue() + "\"");
+				if (_log.isInfoEnabled()) {
+					_log.info(
+						"-- Found structure: \"" +
+							_growStruct.getNameCurrentValue() + "\"");
+				}
 
 				break;
 			}
@@ -506,9 +530,11 @@ public class WikiMigrationImpl implements WikiMigration {
 		if (!growTemplates.isEmpty()) {
 			_growTemp = growTemplates.get(0);
 
-			System.out.println(
-				"-- Found template: \"" + _growTemp.getNameCurrentValue() +
-					"\"");
+			if (_log.isInfoEnabled()) {
+				_log.info(
+					"-- Found template: \"" + _growTemp.getNameCurrentValue() +
+						"\"");
+			}
 		}
 
 		_initCategories();
@@ -545,11 +571,15 @@ public class WikiMigrationImpl implements WikiMigration {
 			if (groupName.equals("Guest")) {
 				_groupId = group.getGroupId();
 
-				System.out.println("-- groupId=" + _groupId);
+				if (_log.isInfoEnabled()) {
+					_log.info("-- groupId=" + _groupId);
+				}
 
 				_companyId = group.getCompanyId();
 
-				System.out.println("-- companyId=" + _companyId);
+				if (_log.isInfoEnabled()) {
+					_log.info("-- companyId=" + _companyId);
+				}
 
 				_defaultUserId = UserLocalServiceUtil.getDefaultUserId(
 					_companyId);
@@ -558,7 +588,9 @@ public class WikiMigrationImpl implements WikiMigration {
 					_defaultUserId = group.getCreatorUserId();
 				}
 
-				System.out.println("-- defaultUserId=" + _defaultUserId);
+				if (_log.isInfoEnabled()) {
+					_log.info("-- defaultUserId=" + _defaultUserId);
+				}
 
 				return;
 			}
@@ -622,9 +654,11 @@ public class WikiMigrationImpl implements WikiMigration {
 				article.getArticleId(), article.getVersion(), titleMap,
 				descriptionMap, content, null, serviceContext);
 
-			System.out.println(
-				"Article updated: id=" + article.getId() + ", version=" +
-					article.getVersion());
+			if (_log.isDebugEnabled()) {
+				_log.debug(
+					"Article updated: id=" + article.getId() + ", version=" +
+						article.getVersion());
+			}
 
 			_updateTimestamp(article, page);
 
@@ -635,17 +669,20 @@ public class WikiMigrationImpl implements WikiMigration {
 			return article;
 		}
 		catch (Exception e) {
-			System.err.println("ERROR in updateArticle");
-			e.printStackTrace();
+			if (_log.isWarnEnabled()) {
+				_log.warn("ERROR in updateArticle", e);
+			}
 		}
 
 		return null;
 	}
 
 	private void _updateTimestamp(JournalArticle article, WikiPage page) {
-		System.out.println(
-			"Updating timestamp: id=" + article.getId() + ", statusDate=" +
-				page.getStatusDate());
+		if (_log.isDebugEnabled()) {
+			_log.debug(
+				"Updating timestamp: id=" + article.getId() + ", statusDate=" +
+					page.getStatusDate());
+		}
 
 		try {
 			Connection connection = DataAccess.getConnection();
@@ -662,10 +699,14 @@ public class WikiMigrationImpl implements WikiMigration {
 			ps.executeUpdate();
 		}
 		catch (Exception e) {
-			System.err.println("ERROR in updateTimestamp");
-			e.printStackTrace();
+			if (_log.isWarnEnabled()) {
+				_log.warn("ERROR in updateTimestamp", e);
+			}
 		}
 	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		WikiMigrationImpl.class);
 
 	private Map<String, Long> _categoriesMap = new HashMap<>();
 	private long _companyId;
