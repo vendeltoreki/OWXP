@@ -85,8 +85,8 @@ public class WikiMigrationImpl implements WikiMigration {
 	@Override
 	public void migrateWikiPage(long wikiPageResourcePrimKey) throws Exception {
 		if (_log.isInfoEnabled()) {
-			_log.info(
-				"Starting single Wiki page migration: " +
+			_logInfo(
+				"Starting single Wiki page migration: resourcePrimKey=" +
 					wikiPageResourcePrimKey);
 		}
 
@@ -95,12 +95,16 @@ public class WikiMigrationImpl implements WikiMigration {
 		_executeMigrationByResourcePrimKey(wikiPageResourcePrimKey);
 
 		_postProcessChildPages();
+
+		if (_log.isInfoEnabled()) {
+			_logInfo("Wiki migration completed");
+		}
 	}
 
 	@Override
 	public void migrateWikis() throws Exception {
 		if (_log.isInfoEnabled()) {
-			_log.info("Starting Wiki migration");
+			_logInfo("Starting Wiki migration");
 		}
 
 		_init();
@@ -108,6 +112,10 @@ public class WikiMigrationImpl implements WikiMigration {
 		_executeMigrationByResourcePrimKeys(null);
 
 		_postProcessChildPages();
+
+		if (_log.isInfoEnabled()) {
+			_logInfo("Wiki migration completed");
+		}
 	}
 
 	private JournalArticle _addArticle(
@@ -144,7 +152,7 @@ public class WikiMigrationImpl implements WikiMigration {
 		}
 		catch (Exception e) {
 			if (_log.isWarnEnabled()) {
-				_log.warn("ERROR in addArticle", e);
+				_logWarn("ERROR in addArticle", e);
 			}
 		}
 
@@ -326,7 +334,7 @@ public class WikiMigrationImpl implements WikiMigration {
 		}
 		catch (Exception e) {
 			if (_log.isWarnEnabled()) {
-				_log.warn("ERROR in _getContentXml", e);
+				_logWarn("ERROR in _getContentXml", e);
 			}
 		}
 
@@ -347,7 +355,7 @@ public class WikiMigrationImpl implements WikiMigration {
 				growVocabulary = voc;
 
 				if (_log.isInfoEnabled()) {
-					_log.info(
+					_logInfo(
 						"-- Found Vocabulary: \"" + growVocabulary.getName() +
 							"\"");
 				}
@@ -455,7 +463,7 @@ public class WikiMigrationImpl implements WikiMigration {
 		}
 		catch (Exception e) {
 			if (_log.isWarnEnabled()) {
-				_log.warn("ERROR in _handleHeadVersion", e);
+				_logWarn("ERROR in _handleHeadVersion", e);
 			}
 		}
 
@@ -497,7 +505,7 @@ public class WikiMigrationImpl implements WikiMigration {
 
 	private void _init() throws Exception {
 		if (_log.isInfoEnabled()) {
-			_log.info("Initializing");
+			_logInfo("Initializing");
 		}
 
 		_initGroup();
@@ -531,7 +539,7 @@ public class WikiMigrationImpl implements WikiMigration {
 			_growTemp = growTemplates.get(0);
 
 			if (_log.isInfoEnabled()) {
-				_log.info(
+				_logInfo(
 					"-- Found template: \"" + _growTemp.getNameCurrentValue() +
 						"\"");
 			}
@@ -572,13 +580,13 @@ public class WikiMigrationImpl implements WikiMigration {
 				_groupId = group.getGroupId();
 
 				if (_log.isInfoEnabled()) {
-					_log.info("-- groupId=" + _groupId);
+					_logInfo("-- groupId=" + _groupId);
 				}
 
 				_companyId = group.getCompanyId();
 
 				if (_log.isInfoEnabled()) {
-					_log.info("-- companyId=" + _companyId);
+					_logInfo("-- companyId=" + _companyId);
 				}
 
 				_defaultUserId = UserLocalServiceUtil.getDefaultUserId(
@@ -589,12 +597,26 @@ public class WikiMigrationImpl implements WikiMigration {
 				}
 
 				if (_log.isInfoEnabled()) {
-					_log.info("-- defaultUserId=" + _defaultUserId);
+					_logInfo("-- defaultUserId=" + _defaultUserId);
 				}
 
 				return;
 			}
 		}
+	}
+
+	private void _logInfo(String message) {
+		_log.info(message);
+
+		System.out.println(message);
+	}
+
+	private void _logWarn(String message, Throwable throwable) {
+		_log.warn(message);
+
+		System.err.println(message);
+
+		throwable.printStackTrace();
 	}
 
 	private void _postProcessChildPages() throws PortalException {
@@ -670,7 +692,7 @@ public class WikiMigrationImpl implements WikiMigration {
 		}
 		catch (Exception e) {
 			if (_log.isWarnEnabled()) {
-				_log.warn("ERROR in updateArticle", e);
+				_logWarn("ERROR in updateArticle", e);
 			}
 		}
 
