@@ -185,7 +185,7 @@ public class WikiMigrationImpl implements WikiMigration {
 			"selectedClassNameIds", journalClassNameId + ":" + growStructureId);
 
 		vocabulary.setSettings(settingsProperties.toString());
-		
+
 		AssetVocabularyLocalServiceUtil.updateAssetVocabulary(vocabulary);
 
 		for (String categoryName :
@@ -273,14 +273,22 @@ public class WikiMigrationImpl implements WikiMigration {
 		try {
 			String format = page.getFormat();
 
-			if (!format.equalsIgnoreCase("markdown")) {
-				format = "html";
+			String content = null;
+
+			if (format.equalsIgnoreCase("markdown")) {
+				format = "markdown";
+
+				content = page.getContent();
 			}
+			else {
+				format = "html";
 
-			WikiPageDisplay display = WikiPageLocalServiceUtil.getPageDisplay(
-				page, null, null, "");
+				WikiPageDisplay display =
+					WikiPageLocalServiceUtil.getPageDisplay(
+						page, null, null, "");
 
-			String content = display.getFormattedContent();
+				content = display.getFormattedContent();
+			}
 
 			System.out.println(
 				"FormattedContent=\n>>>>>>>>>>>>\n" + content +
@@ -560,23 +568,28 @@ public class WikiMigrationImpl implements WikiMigration {
 	private void _postProcessChildPages() throws PortalException {
 		for (Map.Entry<Long, Long> entry : _parentsMap.entrySet()) {
 			long childResourcePrimKey = entry.getKey();
-
-			long childArticleId = _keysMap.get(childResourcePrimKey);
-
-			AssetEntry childAssetEntry = AssetEntryLocalServiceUtil.getEntry(
-				JournalArticle.class.getName(), childArticleId);
-
 			long parentResourcePrimKey = entry.getValue();
 
-			long parentArticleId = _keysMap.get(parentResourcePrimKey);
+			if (_keysMap.containsKey(childResourcePrimKey) &&
+				_keysMap.containsKey(parentResourcePrimKey)) {
 
-			AssetEntry parentAssetEntry = AssetEntryLocalServiceUtil.getEntry(
-				JournalArticle.class.getName(), parentArticleId);
+				long childArticleId = _keysMap.get(childResourcePrimKey);
 
-			AssetLinkLocalServiceUtil.addLink(
-				parentAssetEntry.getUserId(), parentAssetEntry.getEntryId(),
-				childAssetEntry.getEntryId(), AssetLinkConstants.TYPE_RELATED,
-				0);
+				AssetEntry childAssetEntry =
+					AssetEntryLocalServiceUtil.getEntry(
+						JournalArticle.class.getName(), childArticleId);
+
+				long parentArticleId = _keysMap.get(parentResourcePrimKey);
+
+				AssetEntry parentAssetEntry =
+					AssetEntryLocalServiceUtil.getEntry(
+						JournalArticle.class.getName(), parentArticleId);
+
+				AssetLinkLocalServiceUtil.addLink(
+					parentAssetEntry.getUserId(), parentAssetEntry.getEntryId(),
+					childAssetEntry.getEntryId(),
+					AssetLinkConstants.TYPE_RELATED, 0);
+			}
 		}
 	}
 
