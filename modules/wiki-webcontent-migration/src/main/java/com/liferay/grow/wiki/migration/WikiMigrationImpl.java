@@ -718,10 +718,13 @@ public class WikiMigrationImpl implements WikiMigration {
 					page.getStatusDate());
 		}
 
-		try {
-			Connection connection = DataAccess.getConnection();
+		Connection connection = null;
+		PreparedStatement ps = null;
 
-			PreparedStatement ps = connection.prepareStatement(
+		try {
+			connection = DataAccess.getConnection();
+
+			ps = connection.prepareStatement(
 				"update JournalArticle set statusDate=? where id_ = ?");
 
 			Date statusDate = page.getStatusDate();
@@ -735,6 +738,25 @@ public class WikiMigrationImpl implements WikiMigration {
 		catch (Exception e) {
 			if (_log.isWarnEnabled()) {
 				_log.warn("ERROR in updateTimestamp", e);
+			}
+		}
+		finally {
+			if (ps != null) {
+				try {
+					ps.close();
+				}
+				catch (Throwable t) {
+					/* Ignore */
+				}
+			}
+
+			if (connection != null) {
+				try {
+					connection.close();
+				}
+				catch (Throwable t) {
+					/* Ignore */
+				}
 			}
 		}
 	}
