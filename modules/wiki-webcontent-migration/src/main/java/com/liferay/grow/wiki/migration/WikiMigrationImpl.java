@@ -30,6 +30,8 @@ import com.liferay.dynamic.data.mapping.model.DDMTemplate;
 import com.liferay.dynamic.data.mapping.service.DDMStructureLocalServiceUtil;
 import com.liferay.journal.model.JournalArticle;
 import com.liferay.journal.service.JournalArticleLocalServiceUtil;
+import com.liferay.petra.string.CharPool;
+import com.liferay.petra.string.StringPool;
 import com.liferay.petra.xml.XMLUtil;
 import com.liferay.portal.kernel.dao.jdbc.DataAccess;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
@@ -49,6 +51,7 @@ import com.liferay.portal.kernel.service.UserLocalServiceUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringBundler;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.URLCodec;
 import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.xml.Document;
@@ -57,6 +60,7 @@ import com.liferay.portal.kernel.xml.SAXReaderUtil;
 import com.liferay.ratings.kernel.exception.NoSuchStatsException;
 import com.liferay.ratings.kernel.model.RatingsEntry;
 import com.liferay.ratings.kernel.service.RatingsEntryLocalServiceUtil;
+import com.liferay.wiki.escape.WikiEscapeUtil;
 import com.liferay.wiki.model.WikiPage;
 import com.liferay.wiki.model.WikiPageDisplay;
 import com.liferay.wiki.service.WikiPageLocalServiceUtil;
@@ -72,6 +76,10 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import javax.portlet.PortletURL;
 
 import org.osgi.service.component.annotations.Component;
 
@@ -176,6 +184,36 @@ public class WikiMigrationImpl implements WikiMigration {
 
 		dynamicContentElement.addAttribute("language-id", languageId);
 		dynamicContentElement.addCDATA(content);
+	}
+
+	private String _createAbsoluteLinkFromTitle(String title, long nodeId) {
+		title = StringUtil.replace(
+			title, CharPool.NO_BREAK_SPACE, StringPool.SPACE);
+
+		WikiPage wikiPage = WikiPageLocalServiceUtil.fetchPage(nodeId, title);
+
+		if (wikiPage == null) {
+			return title;
+		}
+
+		String category = "Share";
+
+		try {
+			category = _getWikiPageCategoryName(wikiPage);
+		}
+		catch (PortalException pe) {
+			_logWarn("Error during retrieving wiki page category", pe);
+		}
+
+		category = category.toLowerCase();
+
+		String escapedTitle = WikiEscapeUtil.escapeName(wikiPage.getTitle());
+
+		escapedTitle = escapedTitle.replaceAll("<", "_");
+		escapedTitle = escapedTitle.replaceAll(">", "_");
+		escapedTitle = URLCodec.encodeURL(escapedTitle);
+
+		return "https://grow.liferay.com/" + category + "/" + escapedTitle;
 	}
 
 	private AssetVocabulary _createGrowVocabulary(String vocabularyName)
@@ -287,6 +325,19 @@ public class WikiMigrationImpl implements WikiMigration {
 		adq.performActions();
 	}
 
+	private String _getAbsoluteLinkFromTitle(String title, long nodeId) {
+		if (_titleLinkMap.containsKey(title)) {
+			return _titleLinkMap.get(title);
+		}
+		else {
+			String link = _createAbsoluteLinkFromTitle(title, nodeId);
+
+			_titleLinkMap.put(title, link);
+
+			return link;
+		}
+	}
+
 	private String _getContentXml(WikiPage page) {
 		try {
 			String format = page.getFormat();
@@ -308,12 +359,18 @@ public class WikiMigrationImpl implements WikiMigration {
 						"<<TableOfContents>>", "[TOC]");
 				}
 
+				originalContent = _replaceRelativeLinks(
+					originalContent, page.getNodeId());
+
 				page.setContent(originalContent);
+
+				PortletURL viewPageUrl = null;
 
 				WikiPageDisplay display =
 					WikiPageLocalServiceUtil.getPageDisplay(
-						page, null, null,
-						"/documents/"+_groupId+"/"+_attachmentFolderId+"/");
+						page, viewPageUrl, null,
+						"/documents/" + _groupId + "/" + _attachmentFolderId +
+							"/");
 
 				content = display.getFormattedContent();
 			}
@@ -659,6 +716,44 @@ public class WikiMigrationImpl implements WikiMigration {
 		}
 	}
 
+	private String _replaceRelativeLinks(String content, long nodeId) {
+		StringBuffer sb = new StringBuffer();
+
+		Matcher m = _creoleLinkPattern.matcher(content);
+
+		while (m.find()) {
+			String link = m.group(1);
+
+			if (link.startsWith("http://") || link.startsWith("https://")) {
+				m.appendReplacement(sb, "[[" + link + "]]");
+			}
+			else {
+				String title = null;
+				String linkText = null;
+
+				if (link.contains("|")) {
+					String[] linkElements = link.split("\\|");
+
+					title = linkElements[0];
+					linkText = linkElements[1];
+				}
+				else {
+					title = link;
+					linkText = link;
+				}
+
+				m.appendReplacement(
+					sb,
+					"[[" + _getAbsoluteLinkFromTitle(title, nodeId) + "|" +
+						linkText + "]]");
+			}
+		}
+
+		m.appendTail(sb);
+
+		return sb.toString();
+	}
+
 	private JournalArticle _updateArticle(
 		long articleResourcePrimKey, WikiPage page) {
 
@@ -767,11 +862,14 @@ public class WikiMigrationImpl implements WikiMigration {
 	private long _attachmentFolderId;
 	private Map<String, Long> _categoriesMap = new HashMap<>();
 	private long _companyId;
+	private final Pattern _creoleLinkPattern = Pattern.compile(
+		"\\[\\[(.+?)\\]\\]");
 	private long _defaultUserId;
 	private long _groupId;
 	private DDMStructure _growStruct;
 	private DDMTemplate _growTemp;
 	private Map<Long, Long> _keysMap = new HashMap<>();
 	private Map<Long, Long> _parentsMap = new HashMap<>();
+	private Map<String, String> _titleLinkMap = new HashMap<>();
 
 }
