@@ -160,7 +160,7 @@ public class WikiMigrationImpl implements WikiMigration {
 		}
 		catch (Exception e) {
 			if (_log.isWarnEnabled()) {
-				_logWarn("ERROR in addArticle", e);
+				_logWarn("ERROR in addArticle: " + e.getMessage(), e);
 			}
 		}
 
@@ -198,12 +198,7 @@ public class WikiMigrationImpl implements WikiMigration {
 
 		String category = "Share";
 
-		try {
-			category = _getWikiPageCategoryName(wikiPage);
-		}
-		catch (PortalException pe) {
-			_logWarn("Error during retrieving wiki page category", pe);
-		}
+		category = _getWikiPageCategoryName(wikiPage);
 
 		category = category.toLowerCase();
 
@@ -401,7 +396,7 @@ public class WikiMigrationImpl implements WikiMigration {
 		}
 		catch (Exception e) {
 			if (_log.isWarnEnabled()) {
-				_logWarn("ERROR in _getContentXml", e);
+				_logWarn("ERROR in _getContentXml: " + e.getMessage(), e);
 			}
 		}
 
@@ -434,33 +429,39 @@ public class WikiMigrationImpl implements WikiMigration {
 		return growVocabulary;
 	}
 
-	private String _getWikiPageCategoryName(WikiPage wikiPage)
-		throws PortalException {
+	private String _getWikiPageCategoryName(WikiPage wikiPage) {
+		String parentTitle = "Share";
 
-		String parentTitle = wikiPage.getTitle();
+		try {
+			parentTitle = wikiPage.getTitle();
 
-		if (!parentTitle.equals("Learn") && !parentTitle.equals("Share") &&
-			!parentTitle.equals("People") &&
-			!parentTitle.equals("Excellence")) {
-
-			parentTitle = wikiPage.getParentTitle();
-
-			while (Validator.isNotNull(parentTitle) &&
-				   !parentTitle.equals("Learn") &&
-				   !parentTitle.equals("Share") &&
-				   !parentTitle.equals("People") &&
-				   !parentTitle.equals("Excellence")) {
-
-				wikiPage = wikiPage.getParentPage();
+			if (!parentTitle.equals("Learn") && !parentTitle.equals("Share") &&
+				!parentTitle.equals("People") &&
+				!parentTitle.equals("Excellence")) {
 
 				parentTitle = wikiPage.getParentTitle();
+
+				while (Validator.isNotNull(parentTitle) &&
+					   !parentTitle.equals("Learn") &&
+					   !parentTitle.equals("Share") &&
+					   !parentTitle.equals("People") &&
+					   !parentTitle.equals("Excellence")) {
+
+					wikiPage = wikiPage.getParentPage();
+
+					parentTitle = wikiPage.getParentTitle();
+				}
+			}
+
+			if (!parentTitle.equals("Excellence") &&
+				!parentTitle.equals("Learn") && !parentTitle.equals("Share") &&
+				!parentTitle.equals("People")) {
+
+				parentTitle = "Share";
 			}
 		}
-
-		if (!parentTitle.equals("Excellence") && !parentTitle.equals("Learn") &&
-			!parentTitle.equals("Share") && !parentTitle.equals("People")) {
-
-			parentTitle = "Share";
+		catch (Exception e) {
+			_logWarn("ERROR in _getWikiPageCategoryName: " + e.getMessage(), e);
 		}
 
 		return parentTitle;
@@ -532,7 +533,7 @@ public class WikiMigrationImpl implements WikiMigration {
 		}
 		catch (Exception e) {
 			if (_log.isWarnEnabled()) {
-				_logWarn("ERROR in _handleHeadVersion", e);
+				_logWarn("ERROR in _handleHeadVersion: " + e.getMessage(), e);
 			}
 		}
 
@@ -799,7 +800,7 @@ public class WikiMigrationImpl implements WikiMigration {
 		}
 		catch (Exception e) {
 			if (_log.isWarnEnabled()) {
-				_logWarn("ERROR in updateArticle", e);
+				_logWarn("ERROR in updateArticle: " + e.getMessage(), e);
 			}
 		}
 
@@ -832,7 +833,7 @@ public class WikiMigrationImpl implements WikiMigration {
 		}
 		catch (Exception e) {
 			if (_log.isWarnEnabled()) {
-				_log.warn("ERROR in updateTimestamp", e);
+				_log.warn("ERROR in updateTimestamp: " + e.getMessage(), e);
 			}
 		}
 		finally {
