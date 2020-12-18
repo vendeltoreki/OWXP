@@ -14,6 +14,8 @@
 
 package com.liferay.grow.wiki.migration;
 
+import com.liferay.asset.display.page.constants.AssetDisplayPageConstants;
+import com.liferay.asset.display.page.service.AssetDisplayPageEntryLocalServiceUtil;
 import com.liferay.asset.kernel.model.AssetCategory;
 import com.liferay.asset.kernel.model.AssetEntry;
 import com.liferay.asset.kernel.model.AssetLinkConstants;
@@ -30,6 +32,8 @@ import com.liferay.dynamic.data.mapping.model.DDMTemplate;
 import com.liferay.dynamic.data.mapping.service.DDMStructureLocalServiceUtil;
 import com.liferay.journal.model.JournalArticle;
 import com.liferay.journal.service.JournalArticleLocalServiceUtil;
+import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
+import com.liferay.layout.page.template.service.LayoutPageTemplateEntryServiceUtil;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringPool;
 import com.liferay.petra.xml.XMLUtil;
@@ -49,6 +53,7 @@ import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalServiceUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.StringBundler;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.URLCodec;
@@ -145,12 +150,43 @@ public class WikiMigrationImpl implements WikiMigration {
 
 		descriptionMap.put(locale, page.getSummary());
 
+		String friendlyURL = _getEscapedUrlFromTitle(page.getTitle());
+
+		friendlyURL = friendlyURL.replace('+', '-');
+
+		Map<Locale, String> friendlyURLMap = new HashMap<>();
+
+		friendlyURLMap.put(locale, friendlyURL);
+
 		try {
 			JournalArticle article = JournalArticleLocalServiceUtil.addArticle(
 				page.getUserId(), page.getGroupId(), 0, titleMap,
 				descriptionMap, content, structKey, tempKey, serviceContext);
 
+			String className = JournalArticle.class.getName();
+
+			long classNameId = PortalUtil.getClassNameId(className);
+
+			long classPK = article.getResourcePrimKey();
+			long groupId = page.getGroupId();
+			long userId = page.getUserId();
+
+			long structureId = _growStruct.getStructureId();
+
+			LayoutPageTemplateEntry defaultAssetDisplayPage =
+				LayoutPageTemplateEntryServiceUtil.fetchDefaultLayoutPageTemplateEntry(
+					groupId, classNameId, structureId);
+
+			long assetDisplayPageId =
+				defaultAssetDisplayPage.getLayoutPageTemplateEntryId();
+
+			AssetDisplayPageEntryLocalServiceUtil.addAssetDisplayPageEntry(
+				userId, groupId, classNameId, classPK, assetDisplayPageId,
+				AssetDisplayPageConstants.TYPE_DEFAULT, serviceContext);
+
 			_updateTimestamp(article, page);
+
+			_updateFriendlyUrl(article, friendlyURL);
 
 			if (page.isHead()) {
 				_handleHeadVersion(page, article);
@@ -202,11 +238,7 @@ public class WikiMigrationImpl implements WikiMigration {
 
 		category = category.toLowerCase();
 
-		String escapedTitle = WikiEscapeUtil.escapeName(wikiPage.getTitle());
-
-		escapedTitle = escapedTitle.replaceAll("<", "_");
-		escapedTitle = escapedTitle.replaceAll(">", "_");
-		escapedTitle = URLCodec.encodeURL(escapedTitle);
+		String escapedTitle = _getEscapedUrlFromTitle(wikiPage.getTitle());
 
 		return "https://grow.liferay.com/" + category + "/" + escapedTitle;
 	}
@@ -401,6 +433,16 @@ public class WikiMigrationImpl implements WikiMigration {
 		}
 
 		return null;
+	}
+
+	private String _getEscapedUrlFromTitle(String title) {
+		String escapedTitle = WikiEscapeUtil.escapeName(title);
+
+		escapedTitle = escapedTitle.replaceAll("<", "_");
+		escapedTitle = escapedTitle.replaceAll(">", "_");
+		escapedTitle = URLCodec.encodeURL(escapedTitle);
+
+		return escapedTitle;
 	}
 
 	private AssetVocabulary _getVocabularyByName(String vocabularyName) {
@@ -805,6 +847,56 @@ public class WikiMigrationImpl implements WikiMigration {
 		}
 
 		return null;
+	}
+
+	private void _updateFriendlyUrl(
+		JournalArticle article, String newUrlTitle) {
+
+		if (_log.isDebugEnabled()) {
+			_log.debug(
+				"Updating friendly url " + article.getUrlTitle() + " to " +
+					newUrlTitle);
+		}
+
+		Connection connection = null;
+		PreparedStatement ps = null;
+
+		try {
+			connection = DataAccess.getConnection();
+
+			ps = connection.prepareStatement(
+				"update JournalArticle set urlTitle=? where id_ = ?");
+
+			ps.setString(1, newUrlTitle);
+
+			ps.setLong(2, article.getId());
+
+			ps.executeUpdate();
+		}
+		catch (Exception e) {
+			if (_log.isWarnEnabled()) {
+				_log.warn("ERROR in updateTimestamp: " + e.getMessage(), e);
+			}
+		}
+		finally {
+			if (ps != null) {
+				try {
+					ps.close();
+				}
+				catch (Throwable t) {
+					/* Ignore */
+				}
+			}
+
+			if (connection != null) {
+				try {
+					connection.close();
+				}
+				catch (Throwable t) {
+					/* Ignore */
+				}
+			}
+		}
 	}
 
 	private void _updateTimestamp(JournalArticle article, WikiPage page) {

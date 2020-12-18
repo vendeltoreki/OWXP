@@ -1,7 +1,9 @@
 dependencies {
+	compile group: "com.liferay", name: "com.liferay.asset.display.page.api", version: "5.2.7"
 	compile group: "com.liferay", name: "com.liferay.document.library.api", version: "6.0.3"
 	compile group: "com.liferay", name: "com.liferay.dynamic.data.mapping.api", version: "5.7.0"
 	compile group: "com.liferay", name: "com.liferay.journal.api", version: "4.5.7"
+	compile group: "com.liferay", name: "com.liferay.layout.page.template.api", version: "2.4.5"
 	compile group: "com.liferay", name: "com.liferay.petra.string", version: "3.0.0"
 	compile group: "com.liferay", name: "com.liferay.petra.xml", version: "1.0.0"
 	compile group: "com.liferay", name: "com.liferay.wiki.api", version: "4.4.1"
